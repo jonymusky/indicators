@@ -43,7 +43,11 @@ public struct ClaudeUsageFetcher: Sendable {
                            rateLimitTier: JSON.string(oauth["rateLimitTier"]))
     }
 
+    /// Reads the Keychain item. The `security` CLI is tried first because Claude Code creates the item
+    /// through it, so it is already on the item's access list and no permission dialog appears; the
+    /// Security framework is the fallback (macOS then asks once to allow this app).
     static func readKeychain() -> Data? {
+        if let data = readKeychainViaCLI(), !data.isEmpty { return data }
         let query: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
             kSecAttrService as String: keychainService,
@@ -54,6 +58,22 @@ public struct ClaudeUsageFetcher: Sendable {
         let status = SecItemCopyMatching(query as CFDictionary, &item)
         guard status == errSecSuccess, let data = item as? Data else { return nil }
         return data
+    }
+
+    static func readKeychainViaCLI() -> Data? {
+        let process = Process()
+        process.executableURL = URL(fileURLWithPath: "/usr/bin/security")
+        process.arguments = ["find-generic-password", "-s", keychainService, "-w"]
+        let pipe = Pipe()
+        process.standardOutput = pipe
+        process.standardError = FileHandle.nullDevice
+        do { try process.run() } catch { return nil }
+        let data = pipe.fileHandleForReading.readDataToEndOfFile()
+        process.waitUntilExit()
+        guard process.terminationStatus == 0 else { return nil }
+        // `security -w` prints the raw value followed by a newline.
+        let trimmed = String(decoding: data, as: UTF8.self).trimmingCharacters(in: .whitespacesAndNewlines)
+        return Data(trimmed.utf8)
     }
 
     public func fetch() async throws -> LiveUsage {

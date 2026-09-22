@@ -1,4 +1,4 @@
-.PHONY: build app run cli test clean install pricing
+.PHONY: build app run cli test clean install pricing demo
 
 build:            ## Debug build of every target
 	swift build
@@ -17,6 +17,9 @@ test:             ## Run unit tests (needs Xcode; Command Line Tools alone lack 
 
 install: app      ## Copy the app into /Applications
 	rm -rf /Applications/Indicators.app && cp -R build/Indicators.app /Applications/
+
+demo: app         ## Re-record docs/demo.gif and the popover screenshots (needs Pillow + ffmpeg)
+	python3 scripts/record-demo.py
 
 pricing:          ## Refresh the bundled pricing table from LiteLLM
 	python3 scripts/update-pricing.py

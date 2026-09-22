@@ -6,6 +6,28 @@ public final class ProviderService: @unchecked Sendable {
     public private(set) var catalog: PricingCatalog
     private let caches: [Provider: ParseCache]
     private let lock = NSLock()
+    private var lastLive: [Provider: (usage: LiveUsage, at: Date)] = [:]
+    private var liveBackoffUntil: [Provider: Date] = [:]
+
+    private func backoff(for provider: Provider) -> Date? {
+        lock.lock(); defer { lock.unlock() }
+        return liveBackoffUntil[provider]
+    }
+
+    private func setBackoff(for provider: Provider, until: Date) {
+        lock.lock(); defer { lock.unlock() }
+        liveBackoffUntil[provider] = until
+    }
+
+    private func rememberLive(_ usage: LiveUsage, for provider: Provider, at: Date) {
+        lock.lock(); defer { lock.unlock() }
+        lastLive[provider] = (usage, at)
+    }
+
+    private func recallLive(for provider: Provider) -> (usage: LiveUsage, at: Date)? {
+        lock.lock(); defer { lock.unlock() }
+        return lastLive[provider]
+    }
 
     public init(client: HTTPClient = HTTPClient()) {
         self.client = client
@@ -23,6 +45,21 @@ public final class ProviderService: @unchecked Sendable {
     private func setCatalog(_ fresh: PricingCatalog) {
         lock.lock(); defer { lock.unlock() }
         catalog = fresh
+    }
+
+    /// Turns transport errors into one-line, non-technical notes.
+    static func describe(_ error: Error, provider: Provider) -> String {
+        if case HTTPError.status(let code, _) = error {
+            switch code {
+            case 401, 403: return "\(provider.displayName) rejected the saved login. Sign in again in the CLI."
+            case 429: return "\(provider.displayName) rate-limited the usage check; it will retry on the next refresh."
+            case 500...599: return "\(provider.displayName) usage service is having trouble (HTTP \(code))."
+            default: return "\(provider.displayName) usage check failed (HTTP \(code))."
+            }
+        }
+        let ns = error as NSError
+        if ns.domain == NSURLErrorDomain { return "Offline or blocked: could not reach \(provider.displayName)." }
+        return error.localizedDescription
     }
 
     static func loadCatalog() -> PricingCatalog {
@@ -66,8 +103,11 @@ public final class ProviderService: @unchecked Sendable {
             localLimits = result.rateLimits
         }
 
-        // Live rate limits.
+        // Live rate limits. After a 429 the vendor is left alone for a while.
         do {
+            if let until = backoff(for: provider), until > now {
+                throw HTTPError.status(429, "")
+            }
             let live: LiveUsage?
             switch provider {
             case .claude: live = try await ClaudeUsageFetcher(client: client).fetch()
@@ -81,15 +121,24 @@ public final class ProviderService: @unchecked Sendable {
                 snap.windowsUpdatedAt = now
                 snap.plan = live.plan ?? snap.plan
                 snap.notes += live.notes
+                rememberLive(live, for: provider, at: now)
             }
         } catch {
-            if let localLimits {
+            if case HTTPError.status(429, _) = error, backoff(for: provider).map({ $0 <= now }) ?? true {
+                setBackoff(for: provider, until: now.addingTimeInterval(15 * 60))
+            }
+            if let cached = recallLive(for: provider) {
+                snap.windows = cached.usage.windows
+                snap.windowsSource = .cachedLive
+                snap.windowsUpdatedAt = cached.at
+                snap.plan = cached.usage.plan ?? snap.plan
+            } else if let localLimits {
                 snap.windows = localLimits.windows
                 snap.windowsSource = .localLog
                 snap.windowsUpdatedAt = localLimits.observedAt
                 snap.plan = localLimits.plan.map(CodexUsageFetcher.planName)
             }
-            snap.notes.append(error.localizedDescription)
+            snap.notes.append(Self.describe(error, provider: provider))
         }
         if provider == .grok, KeychainStore.get(.xaiManagementKey) == nil {
             snap.notes.append("Add an xAI management key in Settings to see API spend and balance.")

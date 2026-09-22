@@ -40,6 +40,14 @@ public struct LineReader {
         data = try Data(contentsOf: url, options: [.mappedIfSafe])
     }
 
+    /// Reads only the bytes after `offset` (used for append-only logs that grew since the last parse).
+    public init(url: URL, offset: Int) throws {
+        let handle = try FileHandle(forReadingFrom: url)
+        defer { try? handle.close() }
+        try handle.seek(toOffset: UInt64(offset))
+        data = try handle.readToEnd() ?? Data()
+    }
+
     public init(data: Data) { self.data = data }
 
     /// Calls `body` with each line; the line must contain every needle in `needles` to be visited.
@@ -92,6 +100,15 @@ public protocol LocalLogParser: Sendable {
     /// Directories to scan; missing ones are skipped.
     func roots(environment: [String: String], home: URL) -> [URL]
     func parse(file: URL) throws -> ParsedFile
+    /// Whether files are append-only so that a grown file can be parsed from the previous size.
+    var supportsIncrementalParsing: Bool { get }
+    /// Parses only the bytes after `offset`; the result is merged into the cached entry.
+    func parse(file: URL, from offset: Int) throws -> ParsedFile
+}
+
+public extension LocalLogParser {
+    var supportsIncrementalParsing: Bool { false }
+    func parse(file: URL, from offset: Int) throws -> ParsedFile { try parse(file: file) }
 }
 
 /// Persistent per-file parse results so that unchanged files are never re-read.
@@ -120,6 +137,13 @@ public final class ParseCache: @unchecked Sendable {
         lock.lock(); defer { lock.unlock() }
         guard let e = entries[file.url.path], e.modifiedAt == file.modifiedAt, e.size == file.size else { return nil }
         return e.parsed
+    }
+
+    /// The stale entry for a file that has grown, so the parser can continue from `Entry.size`.
+    public func staleEntry(for file: ScannedFile) -> Entry? {
+        lock.lock(); defer { lock.unlock() }
+        guard let e = entries[file.url.path], file.size > e.size else { return nil }
+        return e
     }
 
     public func store(_ parsed: ParsedFile, for file: ScannedFile) {
@@ -244,6 +268,13 @@ public struct LocalUsageService: Sendable {
             let parsed: ParsedFile
             if let cached = cache.entry(for: file) {
                 parsed = cached
+            } else if parser.supportsIncrementalParsing, let stale = cache.staleEntry(for: file),
+                      let tail = try? parser.parse(file: file.url, from: stale.size) {
+                var merged = stale.parsed
+                merged.events += tail.events
+                if let limits = tail.rateLimits { merged.rateLimits = limits }
+                parsed = merged
+                cache.store(parsed, for: file)
             } else {
                 parsed = (try? parser.parse(file: file.url)) ?? ParsedFile()
                 cache.store(parsed, for: file)

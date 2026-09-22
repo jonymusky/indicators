@@ -1,0 +1,392 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Indicators — your AI usage, in the menu bar</title>
+<meta name="description" content="A native macOS menu bar app that shows live rate limits for Claude, OpenAI and Gemini, plus real costs computed from your local Claude Code, Codex and Gemini CLI logs. Open source, zero telemetry.">
+<meta property="og:title" content="Indicators — your AI usage, in the menu bar">
+<meta property="og:description" content="Live rate limits for Claude, OpenAI and Gemini. Real costs from your local logs. Zero telemetry.">
+<meta property="og:image" content="https://indicators.jonymusky.com/media/popover-dark.png">
+<meta property="og:url" content="https://indicators.jonymusky.com">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Indicators — your AI usage, in the menu bar">
+<meta name="twitter:description" content="Live rate limits for Claude, OpenAI and Gemini. Real costs from your local logs. Zero telemetry.">
+<meta name="twitter:image" content="https://indicators.jonymusky.com/media/popover-dark.png">
+<meta name="keywords" content="Claude Code usage tracker, Codex usage menu bar, Claude rate limit monitor, ccusage menu bar app, AI token cost monitor macOS, Gemini CLI quota, OpenAI Codex weekly limit, Anthropic usage limits, macOS menu bar AI">
+<meta name="robots" content="index, follow, max-image-preview:large">
+<link rel="canonical" href="https://indicators.jonymusky.com/">
+<link rel="alternate" type="text/plain" href="https://indicators.jonymusky.com/llms.txt" title="llms.txt">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "SoftwareApplication",
+      "name": "Indicators",
+      "url": "https://indicators.jonymusky.com/",
+      "applicationCategory": "DeveloperApplication",
+      "operatingSystem": "macOS 14+",
+      "description": "A native macOS menu bar app that shows live rate-limit usage for Claude (Claude Code), OpenAI (Codex CLI) and Gemini (Gemini CLI), plus ccusage-style cost estimates computed from local logs and real billed spend from vendor admin APIs.",
+      "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+      "license": "https://opensource.org/licenses/MIT",
+      "downloadUrl": "https://github.com/jonymusky/indicators/releases/latest",
+      "softwareHelp": "https://github.com/jonymusky/indicators#readme",
+      "codeRepository": "https://github.com/jonymusky/indicators",
+      "screenshot": "https://indicators.jonymusky.com/media/popover-dark.png",
+      "featureList": [
+        "Claude Code 5-hour and weekly rate-limit windows with reset time",
+        "OpenAI Codex plan usage windows",
+        "Gemini CLI per-model quota buckets",
+        "Cost estimates from local logs at API list prices (ccusage-compatible)",
+        "Real invoiced spend via Anthropic Admin API, OpenAI Costs API and xAI Management API",
+        "No telemetry, runs entirely on device"
+      ]
+    },
+    {
+      "@type": "FAQPage",
+      "mainEntity": [
+        { "@type": "Question", "name": "How do I see my Claude Code usage limit in the macOS menu bar?", "acceptedAnswer": { "@type": "Answer", "text": "Install Indicators. It reuses your Claude Code login to show the 5-hour session and weekly windows as percentages, with the exact reset time, directly in the menu bar." } },
+        { "@type": "Question", "name": "Does Indicators show Codex (OpenAI) rate limits?", "acceptedAnswer": { "@type": "Answer", "text": "Yes. If you signed in to Codex CLI with ChatGPT, Indicators shows your plan's usage windows and reset time. With an API-key login it still shows cost estimates from the Codex session logs." } },
+        { "@type": "Question", "name": "How are costs calculated?", "acceptedAnswer": { "@type": "Answer", "text": "Exactly like ccusage: token counts from local Claude Code, Codex and Gemini CLI logs are multiplied by public API list prices from the LiteLLM pricing table, including cache read, cache write and the 1-hour cache tier. Optional vendor admin keys add the real invoiced spend." } },
+        { "@type": "Question", "name": "Is any data sent to a server?", "acceptedAnswer": { "@type": "Answer", "text": "No. Indicators has no backend and no telemetry. Logs are read locally, and tokens or keys are only sent to the vendor that issued them (Anthropic, OpenAI, Google, xAI) to fetch your own usage." } },
+        { "@type": "Question", "name": "Do I need Xcode to build it?", "acceptedAnswer": { "@type": "Answer", "text": "No. Indicators is a SwiftPM package that builds with the Xcode Command Line Tools alone (make app). Prebuilt releases are also available." } }
+      ]
+    }
+  ]
+}
+</script>
+<link rel="icon" href="media/icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #07080c; --bg2: #0d0f16; --fg: #f4f5f8; --muted: #9aa0ae; --line: rgba(255,255,255,.08);
+    --green: #34c26b; --amber: #f2a626; --red: #e64545; --claude: #d97757; --openai: #10a37f; --gemini: #4285f4;
+    --radius: 16px;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body { margin: 0; background: var(--bg); color: var(--fg); font-family: Inter, -apple-system, system-ui, sans-serif; -webkit-font-smoothing: antialiased; overflow-x: hidden; }
+  a { color: inherit; text-decoration: none; }
+  .mono { font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace; }
+  .wrap { max-width: 1120px; margin: 0 auto; padding: 0 24px; }
+
+  nav { position: fixed; inset: 0 0 auto 0; z-index: 10; display: flex; align-items: center; justify-content: space-between; padding: 18px 28px; backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); background: linear-gradient(to bottom, rgba(7,8,12,.85), rgba(7,8,12,.4)); }
+  nav .brand { display: flex; align-items: center; gap: 10px; font-weight: 700; letter-spacing: -.01em; }
+  nav .brand img { width: 26px; height: 26px; border-radius: 7px; }
+  nav .links { display: flex; gap: 22px; font-size: 14px; color: var(--muted); }
+  nav .links a:hover { color: var(--fg); }
+
+  header { position: relative; min-height: 100svh; display: grid; place-items: center; text-align: center; padding: 120px 24px 80px; overflow: hidden; }
+  #hero-canvas { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 0; }
+  header::after { content: ""; position: absolute; inset: 0; z-index: 0; pointer-events: none; background: radial-gradient(ellipse 55% 45% at 50% 52%, rgba(7,8,12,.55), rgba(7,8,12,0) 70%); }
+  header .inner { position: relative; z-index: 1; max-width: 860px; }
+  .pill { display: inline-flex; align-items: center; gap: 8px; padding: 6px 12px; border: 1px solid var(--line); border-radius: 999px; font-size: 13px; color: var(--muted); background: rgba(255,255,255,.03); }
+  .pill .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--green); box-shadow: 0 0 12px var(--green); }
+  h1 { font-size: clamp(42px, 7vw, 84px); line-height: .98; letter-spacing: -.035em; font-weight: 800; margin: 26px 0 20px; }
+  h1 .grad { background: linear-gradient(90deg, var(--green), var(--amber) 55%, var(--red)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .lead { font-size: clamp(17px, 2vw, 21px); line-height: 1.5; color: var(--muted); max-width: 640px; margin: 0 auto 36px; }
+  .cta { display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; align-items: center; }
+  .btn { display: inline-flex; align-items: center; gap: 8px; padding: 14px 22px; border-radius: 12px; font-weight: 600; font-size: 15px; transition: transform .15s ease, background .15s ease; }
+  .btn:hover { transform: translateY(-1px); }
+  .btn.primary { background: var(--fg); color: #0b0d14; }
+  .btn.ghost { border: 1px solid var(--line); background: rgba(255,255,255,.03); }
+  .cmd { display: inline-flex; align-items: center; gap: 12px; margin-top: 18px; padding: 12px 14px 12px 18px; border: 1px solid var(--line); border-radius: 12px; background: rgba(13,15,22,.85); font-size: 14px; color: #dfe3ea; }
+  .cmd span.dollar { color: var(--green); }
+  .cmd button { border: 1px solid var(--line); background: transparent; color: var(--muted); border-radius: 8px; padding: 6px 10px; font: inherit; font-size: 12px; cursor: pointer; }
+  .cmd button:hover { color: var(--fg); border-color: rgba(255,255,255,.2); }
+  .menubar { margin: 56px auto 0; display: inline-block; border-radius: 10px; overflow: hidden; border: 1px solid var(--line); box-shadow: 0 30px 80px rgba(0,0,0,.6); }
+  .menubar img { display: block; max-width: 100%; height: auto; }
+
+  section { padding: 96px 0; border-top: 1px solid var(--line); }
+  .eyebrow { font-size: 13px; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
+  h2 { font-size: clamp(30px, 4vw, 44px); letter-spacing: -.03em; line-height: 1.1; margin: 12px 0 16px; }
+  .sub { color: var(--muted); font-size: 17px; line-height: 1.55; max-width: 640px; }
+
+  .demo { margin-top: 40px; border-radius: var(--radius); overflow: hidden; border: 1px solid var(--line); background: var(--bg2); box-shadow: 0 40px 120px rgba(0,0,0,.6); }
+  .demo .bar { display: flex; gap: 7px; padding: 12px 14px; border-bottom: 1px solid var(--line); }
+  .demo .bar i { width: 11px; height: 11px; border-radius: 50%; background: #2c3040; display: block; }
+  .demo img { display: block; width: 100%; height: auto; }
+
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; margin-top: 40px; }
+  .card { padding: 24px; border: 1px solid var(--line); border-radius: var(--radius); background: linear-gradient(180deg, rgba(255,255,255,.035), rgba(255,255,255,.015)); }
+  .card h3 { margin: 14px 0 8px; font-size: 18px; letter-spacing: -.01em; }
+  .card p { margin: 0; color: var(--muted); line-height: 1.55; font-size: 15px; }
+  .icon { width: 40px; height: 40px; border-radius: 11px; display: grid; place-items: center; font-weight: 800; font-size: 16px; color: #fff; }
+
+  .shots { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 40px; }
+  .shots img { width: 100%; height: auto; border-radius: 14px; border: 1px solid var(--line); box-shadow: 0 20px 60px rgba(0,0,0,.5); }
+  @media (max-width: 720px) { .shots { grid-template-columns: 1fr; } }
+
+  table { width: 100%; border-collapse: collapse; margin-top: 36px; font-size: 15px; }
+  th, td { text-align: left; padding: 14px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { color: var(--muted); font-weight: 600; font-size: 13px; letter-spacing: .06em; text-transform: uppercase; }
+  td:first-child { font-weight: 600; white-space: nowrap; }
+  .tag { display: inline-block; width: 22px; height: 22px; border-radius: 6px; color: #fff; font-size: 12px; font-weight: 800; text-align: center; line-height: 22px; margin-right: 8px; }
+
+  pre { margin: 0; padding: 18px 20px; border-radius: 12px; background: #0b0d14; border: 1px solid var(--line); white-space: pre-wrap; word-break: break-all; font-size: 13.5px; line-height: 1.6; color: #dfe3ea; }
+  pre .c { color: #6b7280; }
+  .steps { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; margin-top: 36px; }
+  .steps .card strong { display: block; font-size: 13px; color: var(--muted); letter-spacing: .08em; text-transform: uppercase; margin-bottom: 8px; }
+
+  footer { padding: 48px 24px; color: var(--muted); font-size: 14px; border-top: 1px solid var(--line); }
+  footer .wrap { display: flex; flex-wrap: wrap; gap: 16px; justify-content: space-between; align-items: center; }
+  footer a:hover { color: var(--fg); }
+  @media (prefers-reduced-motion: no-preference) {
+    .reveal { animation: rise .7s ease both; }
+    @keyframes rise { from { opacity: 0; transform: translateY(14px); } }
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <a class="brand" href="#"><img src="media/icon.png" alt=""> Indicators</a>
+  <div class="links">
+    <a href="#demo">Demo</a>
+    <a href="#features">Features</a>
+    <a href="#providers">Providers</a>
+    <a href="#faq">FAQ</a>
+    <a href="#install">Install</a>
+    <a href="https://github.com/jonymusky/indicators" target="_blank" rel="noopener">GitHub ↗</a>
+  </div>
+</nav>
+
+<header>
+  <canvas id="hero-canvas"></canvas>
+  <div class="inner">
+    <span class="pill"><span class="dot"></span> Open source · macOS 14+ · zero telemetry</span>
+    <h1>Your AI usage,<br><span class="grad">in the menu bar.</span></h1>
+    <p class="lead">Live rate limits for Claude, OpenAI and Gemini. Real costs computed from your own Claude Code, Codex and Gemini CLI logs, at API list prices. One glance, no dashboards.</p>
+    <div class="cta">
+      <a class="btn primary" href="https://github.com/jonymusky/indicators/releases/latest" target="_blank" rel="noopener">⬇ Download for macOS</a>
+      <a class="btn ghost" href="https://github.com/jonymusky/indicators" target="_blank" rel="noopener">View on GitHub</a>
+    </div>
+    <div class="cmd mono" id="install-cmd">
+      <span><span class="dollar">$</span> curl -fsSL https://indicators.jonymusky.com/install.sh | sh</span>
+      <button type="button" data-copy="curl -fsSL https://indicators.jonymusky.com/install.sh | sh">Copy</button>
+    </div>
+    <div class="menubar"><img src="media/menubar.png" alt="macOS menu bar showing Claude 24% 5h · OpenAI 96%"></div>
+  </div>
+</header>
+
+<section id="demo">
+  <div class="wrap">
+    <div class="reveal">
+      <div class="eyebrow">See it</div>
+      <h2>Every window, every reset, every dollar.</h2>
+      <p class="sub">Click the gauge and you get each provider's rate-limit windows with the time until reset, today / 7-day / month-to-date cost, tokens, and a per-model breakdown. Settings live one click away.</p>
+    </div>
+    <div class="demo reveal">
+      <div class="bar"><i></i><i></i><i></i></div>
+      <img src="media/demo.gif" alt="Indicators demo: popover with usage windows, per-model costs and settings" loading="lazy">
+    </div>
+    <div class="shots reveal">
+      <img src="media/popover-light.png" alt="Popover in light mode" loading="lazy">
+      <img src="media/popover-dark.png" alt="Popover in dark mode" loading="lazy">
+    </div>
+  </div>
+</section>
+
+<section id="features">
+  <div class="wrap">
+    <div class="reveal">
+      <div class="eyebrow">Why</div>
+      <h2>Built for people who live in AI CLIs.</h2>
+      <p class="sub">If you run Claude Code, Codex and Gemini CLI all day, you already have the data. Indicators just reads it.</p>
+    </div>
+    <div class="grid">
+      <div class="card reveal"><div class="icon" style="background:linear-gradient(135deg,var(--green),#1f8f4e)">%</div><h3>Live rate limits</h3><p>5-hour session and weekly windows straight from your Claude Code and Codex logins, Gemini quota buckets per model. Color-coded, with the exact reset time.</p></div>
+      <div class="card reveal"><div class="icon" style="background:linear-gradient(135deg,var(--amber),#b8741a)">$</div><h3>ccusage-grade cost math</h3><p>Tokens from your local transcripts × public API list prices (LiteLLM table, auto-refreshed). Cache reads, cache writes and the 1-hour cache tier are all priced correctly.</p></div>
+      <div class="card reveal"><div class="icon" style="background:linear-gradient(135deg,#7c8cf8,#4a5bd8)">⌘</div><h3>Native, tiny, fast</h3><p>SwiftUI menu bar app. No Electron, no accounts, no background daemons. Builds with the Xcode Command Line Tools alone.</p></div>
+      <div class="card reveal"><div class="icon" style="background:linear-gradient(135deg,var(--claude),#a3512f)">A</div><h3>Real invoices, optionally</h3><p>Add an Anthropic admin key, an OpenAI admin key or an xAI management key and see what the vendor is actually billing you this month, next to the estimate.</p></div>
+      <div class="card reveal"><div class="icon" style="background:linear-gradient(135deg,#8b93a7,#4b5163)">🔒</div><h3>Private by construction</h3><p>Everything runs on your Mac. Logs are read-only, tokens are used in memory for one request, keys live in your Keychain. No telemetry, ever.</p></div>
+      <div class="card reveal"><div class="icon" style="background:linear-gradient(135deg,#34d3c2,#1e8f84)">&gt;_</div><h3>Terminal companion</h3><p><span class="mono">indicators-cli report</span> prints the same numbers for scripts and dashboards. JSON output included.</p></div>
+    </div>
+  </div>
+</section>
+
+<section id="providers">
+  <div class="wrap">
+    <div class="reveal">
+      <div class="eyebrow">Providers</div>
+      <h2>What you get per vendor.</h2>
+    </div>
+    <table class="reveal">
+      <thead><tr><th>Provider</th><th>Rate-limit windows</th><th>Cost from local logs</th><th>Real billed spend</th></tr></thead>
+      <tbody>
+        <tr><td><span class="tag" style="background:var(--claude)">C</span>Claude</td><td>5h session, weekly, per-model weekly, extra usage (Claude Code login)</td><td>~/.claude/projects transcripts</td><td>Anthropic Admin API</td></tr>
+        <tr><td><span class="tag" style="background:var(--openai)">O</span>OpenAI</td><td>Plan windows from your Codex / ChatGPT login, log fallback</td><td>~/.codex/sessions rollouts</td><td>OpenAI Costs API</td></tr>
+        <tr><td><span class="tag" style="background:var(--gemini)">G</span>Gemini</td><td>Per-model quota buckets (Gemini CLI Google login)</td><td>~/.gemini/tmp chats</td><td>—</td></tr>
+        <tr><td><span class="tag" style="background:#555c6e">X</span>Grok</td><td>Not exposed by xAI</td><td>—</td><td>xAI Management API: spend + prepaid balance</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section id="compare">
+  <div class="wrap">
+    <div class="reveal">
+      <div class="eyebrow">Compared</div>
+      <h2>ccusage in the menu bar, plus the limits it can't see.</h2>
+      <p class="sub">Indicators uses the same cost math as ccusage and the same usage endpoints as tools like CodexBar and UsageBar, and puts them together in one native app.</p>
+    </div>
+    <table>
+      <thead><tr><th></th><th>Indicators</th><th>ccusage (CLI)</th><th>Vendor dashboards</th></tr></thead>
+      <tbody>
+        <tr><td>Where</td><td>macOS menu bar, always on</td><td>Terminal, on demand</td><td>Browser, one tab per vendor</td></tr>
+        <tr><td>Rate-limit windows &amp; reset time</td><td>Claude, OpenAI, Gemini — live</td><td>—</td><td>Partially, per vendor</td></tr>
+        <tr><td>Cost from local logs</td><td>Claude Code, Codex, Gemini CLI</td><td>Claude Code, Codex</td><td>—</td></tr>
+        <tr><td>Real invoiced spend</td><td>Anthropic, OpenAI, xAI (optional keys)</td><td>—</td><td>Yes</td></tr>
+        <tr><td>Telemetry / accounts</td><td>None</td><td>None</td><td>Vendor account</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section id="faq">
+  <div class="wrap">
+    <div class="reveal">
+      <div class="eyebrow">FAQ</div>
+      <h2>Questions people ask.</h2>
+    </div>
+    <div class="grid">
+      <div class="card"><h3>How do I see my Claude Code usage limit in the menu bar?</h3><p>Install Indicators. It reuses your Claude Code login and shows the 5-hour session and weekly windows as percentages, with the exact reset time.</p></div>
+      <div class="card"><h3>Does it show Codex / OpenAI rate limits?</h3><p>Yes, when Codex CLI is signed in with ChatGPT. With an API-key login you still get cost estimates from the Codex session logs.</p></div>
+      <div class="card"><h3>How are costs calculated?</h3><p>Like ccusage: tokens from local logs × public API list prices (LiteLLM table), including cache reads, cache writes and the 1-hour cache tier. Optional admin keys add the real invoice.</p></div>
+      <div class="card"><h3>Is anything sent to a server?</h3><p>No backend, no telemetry. Logs are read locally; tokens and keys only go to the vendor that issued them, to fetch your own usage.</p></div>
+      <div class="card"><h3>Which macOS versions?</h3><p>macOS 14 Sonoma and later, Apple Silicon and Intel. Built with SwiftUI; no Electron.</p></div>
+      <div class="card"><h3>Do I need Xcode to build it?</h3><p>No. It is a SwiftPM package that builds with the Xcode Command Line Tools alone. Prebuilt releases are on GitHub.</p></div>
+    </div>
+  </div>
+</section>
+
+<section id="install">
+  <div class="wrap">
+    <div class="reveal">
+      <div class="eyebrow">Install</div>
+      <h2>Thirty seconds, no account.</h2>
+      <p class="sub">Requires macOS 14 Sonoma or later. The app is ad-hoc signed; the installer clears the quarantine flag for you.</p>
+    </div>
+    <div class="steps">
+      <div class="card reveal"><strong>One-liner</strong><pre class="mono">curl -fsSL https://indicators.jonymusky.com/install.sh | sh</pre></div>
+      <div class="card reveal"><strong>Manual</strong><pre class="mono"><span class="c"># download Indicators.zip from the latest release,</span>
+<span class="c"># then move the app and open it</span>
+xattr -d com.apple.quarantine /Applications/Indicators.app
+open /Applications/Indicators.app</pre></div>
+      <div class="card reveal"><strong>From source</strong><pre class="mono">git clone https://github.com/jonymusky/indicators.git
+cd indicators
+make install   <span class="c"># → /Applications/Indicators.app</span></pre></div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <div>© 2026 <a href="https://github.com/jonymusky" target="_blank" rel="noopener">jonymusky</a> · MIT License</div>
+    <div style="display:flex;gap:18px">
+      <a href="https://github.com/jonymusky/indicators" target="_blank" rel="noopener">GitHub</a>
+      <a href="https://github.com/jonymusky/indicators/blob/main/SECURITY.md" target="_blank" rel="noopener">Privacy</a>
+      <a href="https://github.com/jonymusky/indicators/releases" target="_blank" rel="noopener">Releases</a>
+    </div>
+  </div>
+</footer>
+
+<script>
+  document.querySelectorAll('[data-copy]').forEach(b => b.addEventListener('click', async () => {
+    try { await navigator.clipboard.writeText(b.dataset.copy); b.textContent = 'Copied'; setTimeout(() => b.textContent = 'Copy', 1500); } catch {}
+  }));
+</script>
+<script type="importmap">{ "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js" } }</script>
+<script type="module">
+  import * as THREE from 'three';
+  const canvas = document.getElementById('hero-canvas');
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true, powerPreference: 'high-performance' });
+  renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(40, 1, 0.1, 100);
+  camera.position.set(0, 0, 10);
+
+  // A gauge made of particles behind the headline: a 270° arc that fills green → amber → red as usage
+  // "breathes", a thin needle following the fill, and a slow dust field for depth.
+  const ARC = 7000, DUST = 1800, R = 2.6, CY = -0.9;
+  const positions = new Float32Array(ARC * 3), colors = new Float32Array(ARC * 3), seeds = new Float32Array(ARC), alongs = new Float32Array(ARC);
+  const c1 = new THREE.Color('#34c26b'), c2 = new THREE.Color('#f2a626'), c3 = new THREE.Color('#e64545'), tmp = new THREE.Color();
+  const angleAt = t => Math.PI * 1.25 - t * Math.PI * 1.5;  // 225° → -45°
+  for (let i = 0; i < ARC; i++) {
+    const t = i / ARC, a = angleAt(t);
+    const r = R + (Math.random() - .5) * (0.22 + 0.25 * t);
+    positions[i*3] = Math.cos(a) * r; positions[i*3+1] = Math.sin(a) * r + CY; positions[i*3+2] = (Math.random() - .5) * .5;
+    t < .5 ? tmp.copy(c1).lerp(c2, t * 2) : tmp.copy(c2).lerp(c3, (t - .5) * 2);
+    colors[i*3] = tmp.r; colors[i*3+1] = tmp.g; colors[i*3+2] = tmp.b; seeds[i] = Math.random(); alongs[i] = t;
+  }
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+  geo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+  geo.setAttribute('seed', new THREE.BufferAttribute(seeds, 1));
+  geo.setAttribute('along', new THREE.BufferAttribute(alongs, 1));
+  const mat = new THREE.ShaderMaterial({
+    transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, vertexColors: true,
+    uniforms: { uTime: { value: 0 }, uFill: { value: 0 }, uPR: { value: renderer.getPixelRatio() } },
+    vertexShader: `
+      attribute float seed, along; uniform float uTime, uFill, uPR; varying vec3 vColor; varying float vAlpha;
+      void main() {
+        vColor = color;
+        float lit = 1.0 - smoothstep(uFill - .03, uFill + .03, along);
+        vec3 p = position;
+        p.z += sin(uTime * .9 + seed * 6.283) * .1;
+        float drift = .04 * (1. - lit) + .015 * lit;
+        p.xy += vec2(cos(seed * 6.283 + uTime * .4), sin(seed * 6.283 + uTime * .4)) * drift;
+        vec4 mv = modelViewMatrix * vec4(p, 1.);
+        gl_Position = projectionMatrix * mv;
+        gl_PointSize = (1.8 + seed * 2.2) * uPR * (7. / -mv.z) * (0.7 + lit * .6);
+        vAlpha = mix(.30, .9, lit);
+      }`,
+    fragmentShader: `
+      varying vec3 vColor; varying float vAlpha;
+      void main() { vec2 d = gl_PointCoord - .5; float a = smoothstep(.5, .08, length(d)); gl_FragColor = vec4(vColor, a * vAlpha); }`
+  });
+  scene.add(new THREE.Points(geo, mat));
+
+  const dustPos = new Float32Array(DUST * 3);
+  for (let i = 0; i < DUST; i++) { dustPos[i*3] = (Math.random()-.5)*26; dustPos[i*3+1] = (Math.random()-.5)*14; dustPos[i*3+2] = (Math.random()-.5)*10 - 3; }
+  const dust = new THREE.Points(new THREE.BufferGeometry().setAttribute('position', new THREE.BufferAttribute(dustPos, 3)),
+    new THREE.PointsMaterial({ color: 0x9aa3b8, size: .03, transparent: true, opacity: .35, depthWrite: false }));
+  scene.add(dust);
+
+  // Needle: thin, pointing along +Y before rotation, pivoting at the gauge centre.
+  const needle = new THREE.Mesh(new THREE.CylinderGeometry(.012, .035, R * .82, 10),
+    new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: .55 }));
+  needle.geometry.translate(0, R * .41, 0);
+  const hub = new THREE.Mesh(new THREE.RingGeometry(.09, .14, 32), new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: .7, side: THREE.DoubleSide }));
+  const pivot = new THREE.Group(); pivot.position.set(0, CY, 0); pivot.add(needle, hub); scene.add(pivot);
+
+  let mouse = { x: 0, y: 0 }, target = { x: 0, y: 0 };
+  addEventListener('pointermove', e => { target.x = (e.clientX / innerWidth - .5) * 2; target.y = (e.clientY / innerHeight - .5) * 2; }, { passive: true });
+  function resize() {
+    const w = canvas.clientWidth, h = canvas.clientHeight;
+    renderer.setSize(w, h, false); camera.aspect = w / h; camera.updateProjectionMatrix();
+    // Keep the gauge behind the headline on any aspect ratio.
+    camera.position.z = w / h < 0.9 ? 14 : 10;
+  }
+  addEventListener('resize', resize); resize();
+
+  const start = performance.now();
+  function frame(now) {
+    const t = (now - start) / 1000;
+    const fill = reduce ? .68 : .52 + .36 * Math.sin(t * .3 - 1.4) + .03 * Math.sin(t * 2.1);
+    mat.uniforms.uTime.value = t; mat.uniforms.uFill.value = fill;
+    pivot.rotation.z = angleAt(fill) - Math.PI / 2;
+    mouse.x += (target.x - mouse.x) * .04; mouse.y += (target.y - mouse.y) * .04;
+    scene.rotation.y = mouse.x * .14; scene.rotation.x = -mouse.y * .08;
+    dust.rotation.y = t * .012;
+    renderer.render(scene, camera);
+    if (!reduce) requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+</script>
+</body>
+</html>

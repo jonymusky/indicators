@@ -6,6 +6,7 @@ public struct AppSettings: Sendable, Equatable {
     public var enabledProviders: Set<Provider> = Set(Provider.allCases)
     public var showPercentInMenuBar: Bool = true
     public var showCostInMenuBar: Bool = false
+    public var showResetInMenuBar: Bool = false
     public var menuBarLabelStyle: MenuBarLabelStyle = .names
     public var menuBarWindow: MenuBarWindow = .peak
     public var lookbackDays: Int = 35
@@ -17,6 +18,7 @@ public struct AppSettings: Sendable, Equatable {
         static let enabled = "enabledProviders"
         static let showPercent = "showPercentInMenuBar"
         static let showCost = "showCostInMenuBar"
+        static let showReset = "showResetInMenuBar"
         static let labelStyle = "menuBarLabelStyle"
         static let window = "menuBarWindow"
     }
@@ -29,6 +31,7 @@ public struct AppSettings: Sendable, Equatable {
         }
         if defaults.object(forKey: Keys.showPercent) != nil { s.showPercentInMenuBar = defaults.bool(forKey: Keys.showPercent) }
         if defaults.object(forKey: Keys.showCost) != nil { s.showCostInMenuBar = defaults.bool(forKey: Keys.showCost) }
+        if defaults.object(forKey: Keys.showReset) != nil { s.showResetInMenuBar = defaults.bool(forKey: Keys.showReset) }
         if let raw = defaults.string(forKey: Keys.labelStyle), let style = MenuBarLabelStyle(rawValue: raw) { s.menuBarLabelStyle = style }
         if let raw = defaults.string(forKey: Keys.window), let window = MenuBarWindow(rawValue: raw) { s.menuBarWindow = window }
         return s
@@ -39,6 +42,7 @@ public struct AppSettings: Sendable, Equatable {
         defaults.set(enabledProviders.map(\.rawValue).sorted(), forKey: Keys.enabled)
         defaults.set(showPercentInMenuBar, forKey: Keys.showPercent)
         defaults.set(showCostInMenuBar, forKey: Keys.showCost)
+        defaults.set(showResetInMenuBar, forKey: Keys.showReset)
         defaults.set(menuBarLabelStyle.rawValue, forKey: Keys.labelStyle)
         defaults.set(menuBarWindow.rawValue, forKey: Keys.window)
     }

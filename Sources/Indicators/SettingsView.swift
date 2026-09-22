@@ -2,16 +2,21 @@ import SwiftUI
 import ServiceManagement
 import IndicatorsCore
 
+enum SettingsTab: Hashable {
+    case general, keys, about
+}
+
 struct SettingsView: View {
     @EnvironmentObject private var store: AppStore
 
     var body: some View {
-        TabView {
-            GeneralSettings().tabItem { Label("General", systemImage: "gearshape") }
-            KeysSettings().tabItem { Label("Billing APIs", systemImage: "key") }
-            AboutSettings().tabItem { Label("About", systemImage: "info.circle") }
+        TabView(selection: $store.settingsTab) {
+            GeneralSettings().tabItem { Label("General", systemImage: "gearshape") }.tag(SettingsTab.general)
+            KeysSettings().tabItem { Label("Billing APIs", systemImage: "key") }.tag(SettingsTab.keys)
+            AboutSettings().tabItem { Label("About", systemImage: "info.circle") }.tag(SettingsTab.about)
         }
         .frame(width: 480)
+        .frame(minHeight: 440)
         .onAppear { NSApp.activate(ignoringOtherApps: true) }
     }
 }
@@ -42,6 +47,7 @@ struct GeneralSettings: View {
                 Picker("Percentage shown", selection: $store.settings.menuBarWindow) {
                     ForEach(MenuBarWindow.allCases, id: \.self) { Text($0.title).tag($0) }
                 }
+                Toggle("Show time until reset", isOn: $store.settings.showResetInMenuBar)
                 Toggle("Show today's estimated cost", isOn: $store.settings.showCostInMenuBar)
                 Picker("Refresh every", selection: $store.settings.refreshIntervalMinutes) {
                     Text("1 minute").tag(1)

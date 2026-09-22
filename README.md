@@ -10,11 +10,23 @@
 </p>
 
 <p align="center">
+  <a href="https://indicators.jonymusky.com">indicators.jonymusky.com</a> ·
+  <a href="https://github.com/jonymusky/indicators/releases/latest">Download</a> ·
+  <a href="#build-from-source">Build from source</a>
+</p>
+
+<p align="center">
   <img src="docs/menubar.png" alt="Menu bar: Claude 24% 5h · OpenAI 96%">
 </p>
 
 <p align="center">
-  <img src="docs/popover.png" width="420" alt="Popover with usage windows and costs">
+  <img src="docs/demo.gif" width="800" alt="Demo: popover with usage windows, per-model costs, and settings">
+</p>
+
+<p align="center">
+  <img src="docs/popover-light.png" width="380" alt="Popover, light mode">
+  &nbsp;&nbsp;
+  <img src="docs/popover-dark.png" width="380" alt="Popover, dark mode">
 </p>
 
 ## What it shows
@@ -32,9 +44,17 @@
 
 ## Install
 
+### One-liner
+
+```bash
+curl -fsSL https://indicators.jonymusky.com/install.sh | sh
+```
+
+Downloads the latest release into `/Applications/Indicators.app`, clears the quarantine flag and launches it.
+
 ### Download
 
-Grab `Indicators.zip` from the [latest release](https://github.com/jonymusky/indicators/releases), unzip, move `Indicators.app` to `/Applications`, open it.
+Grab `Indicators.zip` from the [latest release](https://github.com/jonymusky/indicators/releases/latest), unzip, move `Indicators.app` to `/Applications`, open it.
 The app is ad-hoc signed; the first launch needs a right-click → Open (or `xattr -d com.apple.quarantine /Applications/Indicators.app`).
 
 ### Build from source
@@ -48,7 +68,7 @@ make app        # → build/Indicators.app
 make install    # copies it to /Applications
 ```
 
-`make cli` prints the same cost report in the terminal:
+`make demo` re-records the README media (needs Pillow and ffmpeg). `make cli` prints the same cost report in the terminal:
 
 ```
 Claude (Claude Code) — 338 files

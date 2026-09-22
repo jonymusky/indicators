@@ -178,6 +178,8 @@ public struct APISpend: Sendable, Equatable, Codable {
 /// Where the rate-limit windows came from.
 public enum WindowsSource: String, Sendable, Codable {
     case liveAPI = "live"
+    /// The last successful live answer, reused because the latest request failed.
+    case cachedLive = "cached"
     case localLog = "local log"
 }
 

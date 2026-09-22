@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://indicators.jonymusky.com/sitemap.xml

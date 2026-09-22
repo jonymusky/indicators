@@ -1,6 +1,23 @@
 import SwiftUI
 import IndicatorsCore
 
+struct LoadingCardView: View {
+    let provider: Provider
+
+    var body: some View {
+        HStack(spacing: 8) {
+            ProviderGlyph(provider: provider)
+            Text(provider.displayName).font(.system(.body, weight: .semibold))
+            Spacer()
+            ProgressView().controlSize(.small)
+            Text("Loading…").font(.caption).foregroundStyle(.secondary)
+        }
+        .padding(12)
+        .background(RoundedRectangle(cornerRadius: 12, style: .continuous).fill(Theme.cardBackground))
+        .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous).stroke(Theme.cardStroke))
+    }
+}
+
 struct MenuContentView: View {
     @EnvironmentObject private var store: AppStore
     @Environment(\.openSettings) private var openSettings
@@ -11,11 +28,15 @@ struct MenuContentView: View {
             Divider()
             // No ScrollView here: inside a MenuBarExtra window it collapses to zero height.
             VStack(spacing: 10) {
-                if store.orderedSnapshots.isEmpty {
+                if store.enabledProviders.isEmpty {
                     emptyState
                 }
-                ForEach(store.orderedSnapshots) { snap in
-                    ProviderCardView(snapshot: snap)
+                ForEach(store.enabledProviders) { provider in
+                    if let snap = store.snapshots[provider] {
+                        ProviderCardView(snapshot: snap)
+                    } else {
+                        LoadingCardView(provider: provider)
+                    }
                 }
             }
             .padding(12)

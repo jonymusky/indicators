@@ -24,8 +24,17 @@ public struct ClaudeCodeLogParser: LocalLogParser {
         return roots.filter { seen.insert($0.standardizedFileURL.path).inserted }
     }
 
+    public var supportsIncrementalParsing: Bool { true }
+
     public func parse(file: URL) throws -> ParsedFile {
-        let reader = try LineReader(url: file)
+        try parse(reader: LineReader(url: file))
+    }
+
+    public func parse(file: URL, from offset: Int) throws -> ParsedFile {
+        try parse(reader: LineReader(url: file, offset: offset))
+    }
+
+    func parse(reader: LineReader) throws -> ParsedFile {
         var events: [UsageEvent] = []
         reader.forEachLine(containing: ["\"usage\"", "\"assistant\""]) { line in
             guard let obj = try? JSONSerialization.jsonObject(with: line) as? [String: Any],

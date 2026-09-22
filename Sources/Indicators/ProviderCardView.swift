@@ -3,7 +3,10 @@ import IndicatorsCore
 
 struct ProviderCardView: View {
     let snapshot: ProviderSnapshot
+    @EnvironmentObject private var store: AppStore
     @StateObject private var showModels = ViewState(false)
+
+    private var isExpanded: Bool { showModels.value || store.demoExpandAll }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
@@ -67,7 +70,7 @@ struct ProviderCardView: View {
             Spacer()
             if let source = snapshot.windowsSource {
                 HStack(spacing: 4) {
-                    Circle().fill(source == .liveAPI ? Theme.level(0) : Color.orange).frame(width: 6, height: 6)
+                    Circle().fill(source == .localLog ? Color.orange : Theme.level(0)).frame(width: 6, height: 6)
                     Text(sourceText(source)).font(.caption2).foregroundStyle(.secondary)
                 }
             }
@@ -77,6 +80,9 @@ struct ProviderCardView: View {
     private func sourceText(_ source: WindowsSource) -> String {
         switch source {
         case .liveAPI: return "live"
+        case .cachedLive:
+            if let at = snapshot.windowsUpdatedAt { return "live · \(Format.relative(at))" }
+            return "live · cached"
         case .localLog:
             if let at = snapshot.windowsUpdatedAt { return "from log · \(Format.relative(at))" }
             return "from log"
@@ -129,7 +135,7 @@ struct ProviderCardView: View {
                 withAnimation(.easeInOut(duration: 0.15)) { showModels.value.toggle() }
             } label: {
                 HStack(spacing: 4) {
-                    Image(systemName: showModels.value ? "chevron.down" : "chevron.right").font(.caption2)
+                    Image(systemName: isExpanded ? "chevron.down" : "chevron.right").font(.caption2)
                     Text("Models today · \(local.today.count)").font(.caption)
                     Spacer()
                     Text("via \(snapshot.provider.localSource)").font(.caption2).foregroundStyle(.tertiary)
@@ -138,7 +144,7 @@ struct ProviderCardView: View {
                 .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
-            if showModels.value {
+            if isExpanded {
                 ForEach(local.today) { model in
                     HStack {
                         Text(model.model).font(.caption.monospaced()).lineLimit(1)

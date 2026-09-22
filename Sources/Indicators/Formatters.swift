@@ -51,6 +51,16 @@ enum Format {
         }
     }
 
+    /// Very short countdown for the menu bar: "45m", "3h", "2d".
+    static func countdown(_ date: Date?, now: Date = Date()) -> String? {
+        guard let date else { return nil }
+        let seconds = Int(date.timeIntervalSince(now))
+        if seconds <= 0 { return "now" }
+        if seconds < 3600 { return "\(max(seconds / 60, 1))m" }
+        if seconds < 86400 { return "\(seconds / 3600)h" }
+        return "\(seconds / 86400)d"
+    }
+
     static func resets(_ date: Date?, now: Date = Date()) -> String? {
         guard let date else { return nil }
         let seconds = Int(date.timeIntervalSince(now))
