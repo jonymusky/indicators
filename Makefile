@@ -1,4 +1,4 @@
-.PHONY: build app run cli test clean install pricing demo
+.PHONY: build app run cli test clean install pricing demo video
 
 build:            ## Debug build of every target
 	swift build
@@ -20,6 +20,9 @@ install: app      ## Copy the app into /Applications
 
 demo: app         ## Re-record docs/demo.gif and the popover screenshots (needs Pillow + ffmpeg)
 	python3 scripts/record-demo.py
+
+video: app        ## Render docs/demo.mp4 (needs Pillow + ffmpeg)
+	python3 scripts/record-demo.py --video
 
 pricing:          ## Refresh the bundled pricing table from LiteLLM
 	python3 scripts/update-pricing.py

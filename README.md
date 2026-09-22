@@ -28,7 +28,8 @@
 </p>
 
 <p align="center">
-  <img src="docs/demo.gif" width="800" alt="Demo: popover with usage windows, per-model costs, and settings">
+  <img src="docs/demo.gif" width="800" alt="Demo: popover with usage windows, per-model costs, and settings"><br>
+  <sub><a href="docs/demo.mp4">Watch as MP4</a></sub>
 </p>
 
 <p align="center">
@@ -76,7 +77,7 @@ make app        # → build/Indicators.app
 make install    # copies it to /Applications
 ```
 
-`make demo` re-records the README media (needs Pillow and ffmpeg). `make cli` prints the same cost report in the terminal:
+`make demo` re-records the README media and `make video` renders `docs/demo.mp4` (both need Pillow and ffmpeg). `make cli` prints the same cost report in the terminal:
 
 ```
 Claude (Claude Code) — 338 files

@@ -27,7 +27,7 @@ jobs:
         run: |
           mkdir -p _site/media
           cp -R site/. _site/
-          cp docs/demo.gif docs/popover-light.png docs/popover-dark.png docs/menubar.png _site/media/ 2>/dev/null || true
+          cp docs/demo.gif docs/demo.mp4 docs/popover-light.png docs/popover-dark.png docs/menubar.png _site/media/ 2>/dev/null || true
           cp Resources/AppIcon.png _site/media/icon.png
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3

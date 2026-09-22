@@ -112,7 +112,7 @@
   .demo { margin-top: 40px; border-radius: var(--radius); overflow: hidden; border: 1px solid var(--line); background: var(--bg2); box-shadow: 0 40px 120px rgba(0,0,0,.6); }
   .demo .bar { display: flex; gap: 7px; padding: 12px 14px; border-bottom: 1px solid var(--line); }
   .demo .bar i { width: 11px; height: 11px; border-radius: 50%; background: #2c3040; display: block; }
-  .demo img { display: block; width: 100%; height: auto; }
+  .demo img, .demo video { display: block; width: 100%; height: auto; }
 
   .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; margin-top: 40px; }
   .card { padding: 24px; border: 1px solid var(--line); border-radius: var(--radius); background: linear-gradient(180deg, rgba(255,255,255,.035), rgba(255,255,255,.015)); }
@@ -206,7 +206,10 @@
     </div>
     <div class="demo reveal">
       <div class="bar"><i></i><i></i><i></i></div>
-      <img src="media/demo.gif" alt="Indicators demo: popover with usage windows, per-model costs and settings" loading="lazy">
+      <video autoplay muted loop playsinline poster="media/popover-dark.png" aria-label="Indicators demo: popover with usage windows, per-model costs and settings">
+        <source src="media/demo.mp4" type="video/mp4">
+        <img src="media/demo.gif" alt="Indicators demo: popover with usage windows, per-model costs and settings" loading="lazy">
+      </video>
     </div>
   </div>
 </section>
