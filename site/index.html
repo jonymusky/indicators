@@ -119,9 +119,6 @@
   .card p { margin: 0; color: var(--muted); line-height: 1.55; font-size: 15px; }
   .icon { width: 40px; height: 40px; border-radius: 11px; display: grid; place-items: center; font-weight: 800; font-size: 16px; color: #fff; }
 
-  .shots { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 40px; }
-  .shots img { width: 100%; height: auto; border-radius: 14px; border: 1px solid var(--line); box-shadow: 0 20px 60px rgba(0,0,0,.5); }
-  @media (max-width: 720px) { .shots { grid-template-columns: 1fr; } }
 
   table { width: 100%; border-collapse: collapse; margin-top: 36px; font-size: 15px; }
   th, td { text-align: left; padding: 14px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
@@ -155,6 +152,44 @@
     <a href="#install">Install</a>
     <a href="https://github.com/jonymusky/indicators" target="_blank" rel="noopener">GitHub ↗</a>
   </div>
+</nav>
+
+<header>
+  <canvas id="hero-canvas"></canvas>
+  <div class="inner">
+    <span class="pill"><span class="dot"></span> Open source · macOS 14+ · zero telemetry</span>
+    <h1>Your AI usage,<br><span class="grad">in the menu bar.</span></h1>
+    <p class="lead">Live rate limits for Claude, OpenAI and Gemini. Real costs computed from your own Claude Code, Codex and Gemini CLI logs, at API list prices. One glance, no dashboards.</p>
+    <div class="cta">
+      <a class="btn primary" href="https://github.com/jonymusky/indicators/releases/latest" target="_blank" rel="noopener">⬇ Download for macOS</a>
+      <a class="btn ghost" href="https://github.com/jonymusky/indicators" target="_blank" rel="noopener">★ Star on GitHub</a>
+    </div>
+    <div class="stats" id="gh-stats" hidden>
+      <a href="https://github.com/jonymusky/indicators/stargazers" target="_blank" rel="noopener"><b id="gh-stars">–</b> stars</a>
+      <span>·</span>
+      <a href="https://github.com/jonymusky/indicators/releases" target="_blank" rel="noopener"><b id="gh-downloads">–</b> downloads</a>
+      <span>·</span>
+      <a href="https://github.com/jonymusky/indicators/releases/latest" target="_blank" rel="noopener" id="gh-version">latest</a>
+    </div>
+    <div class="cmd mono" id="install-cmd">
+      <span><span class="dollar">$</span> curl -fsSL https://indicators.jonymusky.com/install.sh | sh</span>
+      <button type="button" data-copy="curl -fsSL https://indicators.jonymusky.com/install.sh | sh">Copy</button>
+    </div>
+    <div class="menubar"><img src="media/menubar.png" alt="macOS menu bar showing Claude 24% 5h · OpenAI 96%"></div>
+  </div>
+</header>
+
+<section id="demo">
+  <div class="wrap">
+    <div class="reveal">
+      <div class="eyebrow">See it</div>
+      <h2>Every window, every reset, every dollar.</h2>
+      <p class="sub">Click the gauge and you get each provider's rate-limit windows with the time until reset, today / 7-day / month-to-date cost, tokens, and a per-model breakdown. Settings live one click away.</p>
+    </div>
+    <div class="demo reveal">
+      <div class="bar"><i></i><i></i><i></i></div>
+      <img src="media/demo.gif" alt="Indicators demo: popover with usage windows, per-model costs and settings" loading="lazy">
+    </div>
 </nav>
 
 <header>
