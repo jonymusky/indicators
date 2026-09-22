@@ -10,6 +10,14 @@
 </p>
 
 <p align="center">
+  <a href="https://github.com/jonymusky/indicators/releases/latest"><img src="https://img.shields.io/github/v/release/jonymusky/indicators?label=release&color=34c26b" alt="Latest release"></a>
+  <a href="https://github.com/jonymusky/indicators/releases"><img src="https://img.shields.io/github/downloads/jonymusky/indicators/total?color=f2a626" alt="Downloads"></a>
+  <a href="https://github.com/jonymusky/indicators/stargazers"><img src="https://img.shields.io/github/stars/jonymusky/indicators?style=flat&color=e64545" alt="Stars"></a>
+  <a href="https://github.com/jonymusky/indicators/actions/workflows/ci.yml"><img src="https://github.com/jonymusky/indicators/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue" alt="MIT"></a>
+</p>
+
+<p align="center">
   <a href="https://indicators.jonymusky.com">indicators.jonymusky.com</a> ·
   <a href="https://github.com/jonymusky/indicators/releases/latest">Download</a> ·
   <a href="#build-from-source">Build from source</a>

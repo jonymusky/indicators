@@ -165,8 +165,15 @@ struct AboutSettings: View {
             .font(.caption)
             .foregroundStyle(.secondary)
             .frame(maxWidth: .infinity, alignment: .leading)
-            Link("github.com/jonymusky/indicators", destination: URL(string: "https://github.com/jonymusky/indicators")!)
-                .font(.caption)
+            HStack(spacing: 12) {
+                Link(destination: URL(string: "https://github.com/jonymusky/indicators")!) {
+                    Label("Star on GitHub", systemImage: "star")
+                }
+                .buttonStyle(.bordered)
+                Link("Report an issue", destination: URL(string: "https://github.com/jonymusky/indicators/issues")!)
+                    .font(.caption)
+            }
+            Text("Made by jonymusky · me.jonymusky.com").font(.caption2).foregroundStyle(.tertiary)
         }
         .padding(24)
     }

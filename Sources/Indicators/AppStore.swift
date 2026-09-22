@@ -19,6 +19,24 @@ final class AppStore: ObservableObject {
     let service = ProviderService()
     private var timer: Timer?
 
+    /// Shown once, after a week of use, unless dismissed. Never more than that.
+    @Published var showStarNudge = false
+    static let githubURL = URL(string: "https://github.com/jonymusky/indicators")!
+
+    private func evaluateStarNudge() {
+        let defaults = UserDefaults.standard
+        if defaults.object(forKey: "firstLaunchAt") == nil { defaults.set(Date(), forKey: "firstLaunchAt") }
+        guard !defaults.bool(forKey: "starNudgeDismissed"),
+              let first = defaults.object(forKey: "firstLaunchAt") as? Date else { return }
+        showStarNudge = Date().timeIntervalSince(first) > 7 * 86400
+    }
+
+    func dismissStarNudge(openGitHub: Bool) {
+        UserDefaults.standard.set(true, forKey: "starNudgeDismissed")
+        showStarNudge = false
+        if openGitHub { NSWorkspace.shared.open(Self.githubURL) }
+    }
+
     /// Demo/preview hooks (see `openPreviewWindow`).
     @Published var demoExpandAll = false
     @Published var settingsTab: SettingsTab = .general
@@ -26,6 +44,7 @@ final class AppStore: ObservableObject {
     init() {
         settings = AppSettings.load()
         scheduleTimer()
+        evaluateStarNudge()
         Task {
             await refresh()
             await service.refreshPricing()

@@ -31,6 +31,9 @@ struct MenuContentView: View {
                 if store.enabledProviders.isEmpty {
                     emptyState
                 }
+                if store.showStarNudge {
+                    starNudge
+                }
                 ForEach(store.enabledProviders) { provider in
                     if let snap = store.snapshots[provider] {
                         ProviderCardView(snapshot: snap)
@@ -104,6 +107,23 @@ struct MenuContentView: View {
             }
             .opacity(0.001)
         )
+    }
+
+    private var starNudge: some View {
+        HStack(spacing: 10) {
+            Image(systemName: "star.fill").foregroundStyle(.yellow)
+            VStack(alignment: .leading, spacing: 2) {
+                Text("A week with Indicators").font(.caption.weight(.semibold))
+                Text("If it's useful, a star on GitHub helps others find it.").font(.caption2).foregroundStyle(.secondary)
+            }
+            Spacer()
+            Button("Star") { store.dismissStarNudge(openGitHub: true) }.controlSize(.small)
+            Button { store.dismissStarNudge(openGitHub: false) } label: { Image(systemName: "xmark") }
+                .buttonStyle(.borderless).controlSize(.small).foregroundStyle(.secondary)
+        }
+        .padding(10)
+        .background(RoundedRectangle(cornerRadius: 12, style: .continuous).fill(Color.yellow.opacity(0.08)))
+        .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous).stroke(Color.yellow.opacity(0.25)))
     }
 
     private var emptyState: some View {

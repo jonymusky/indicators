@@ -34,3 +34,4 @@ xattr -dr com.apple.quarantine "$APP" 2>/dev/null || true
 echo "▸ Launching"
 open "$APP"
 echo "✓ Indicators is in your menu bar. Settings: click the gauge icon → ⚙"
+echo "  If it's useful, a star helps others find it: https://github.com/jonymusky/indicators"
