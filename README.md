@@ -106,4 +106,4 @@ Cost math and log formats follow [ccusage](https://github.com/ryoppippi/ccusage)
 
 ## License
 
-[MIT](LICENSE)
+[MIT](LICENSE) · made by [jonymusky](https://me.jonymusky.com)
