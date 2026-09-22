@@ -12,13 +12,16 @@ CONFIG="${CONFIG:-release}"
 OUT="build/Indicators.app"
 
 echo "▸ swift build -c $CONFIG"
-swift build -c "$CONFIG" --product Indicators 2>&1 | grep -vE "ld: warning: search path" || true
-BIN="$(swift build -c "$CONFIG" --show-bin-path)/Indicators"
+swift build -c "$CONFIG" 2>&1 | grep -vE "ld: warning: search path" || true
+BINDIR="$(swift build -c "$CONFIG" --show-bin-path)"
+BIN="$BINDIR/Indicators"
 [ -x "$BIN" ] || { echo "build failed: $BIN not found"; exit 1; }
 
 rm -rf "$OUT"
 mkdir -p "$OUT/Contents/MacOS" "$OUT/Contents/Resources"
 cp "$BIN" "$OUT/Contents/MacOS/Indicators"
+# Companions ship inside the bundle: indicators-cli (terminal report) and indicators-mcp (MCP server).
+cp "$BINDIR/indicators-cli" "$BINDIR/indicators-mcp" "$OUT/Contents/MacOS/"
 sed -e "s/__VERSION__/$VERSION/" -e "s/__BUILD__/$BUILD_NUMBER/" Resources/Info.plist > "$OUT/Contents/Info.plist"
 echo -n "APPL????" > "$OUT/Contents/PkgInfo"
 

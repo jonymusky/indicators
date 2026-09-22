@@ -190,48 +190,6 @@
       <div class="bar"><i></i><i></i><i></i></div>
       <img src="media/demo.gif" alt="Indicators demo: popover with usage windows, per-model costs and settings" loading="lazy">
     </div>
-</nav>
-
-<header>
-  <canvas id="hero-canvas"></canvas>
-  <div class="inner">
-    <span class="pill"><span class="dot"></span> Open source · macOS 14+ · zero telemetry</span>
-    <h1>Your AI usage,<br><span class="grad">in the menu bar.</span></h1>
-    <p class="lead">Live rate limits for Claude, OpenAI and Gemini. Real costs computed from your own Claude Code, Codex and Gemini CLI logs, at API list prices. One glance, no dashboards.</p>
-    <div class="cta">
-      <a class="btn primary" href="https://github.com/jonymusky/indicators/releases/latest" target="_blank" rel="noopener">⬇ Download for macOS</a>
-      <a class="btn ghost" href="https://github.com/jonymusky/indicators" target="_blank" rel="noopener">★ Star on GitHub</a>
-    </div>
-    <div class="stats" id="gh-stats" hidden>
-      <a href="https://github.com/jonymusky/indicators/stargazers" target="_blank" rel="noopener"><b id="gh-stars">–</b> stars</a>
-      <span>·</span>
-      <a href="https://github.com/jonymusky/indicators/releases" target="_blank" rel="noopener"><b id="gh-downloads">–</b> downloads</a>
-      <span>·</span>
-      <a href="https://github.com/jonymusky/indicators/releases/latest" target="_blank" rel="noopener" id="gh-version">latest</a>
-    </div>
-    <div class="cmd mono" id="install-cmd">
-      <span><span class="dollar">$</span> curl -fsSL https://indicators.jonymusky.com/install.sh | sh</span>
-      <button type="button" data-copy="curl -fsSL https://indicators.jonymusky.com/install.sh | sh">Copy</button>
-    </div>
-    <div class="menubar"><img src="media/menubar.png" alt="macOS menu bar showing Claude 24% 5h · OpenAI 96%"></div>
-  </div>
-</header>
-
-<section id="demo">
-  <div class="wrap">
-    <div class="reveal">
-      <div class="eyebrow">See it</div>
-      <h2>Every window, every reset, every dollar.</h2>
-      <p class="sub">Click the gauge and you get each provider's rate-limit windows with the time until reset, today / 7-day / month-to-date cost, tokens, and a per-model breakdown. Settings live one click away.</p>
-    </div>
-    <div class="demo reveal">
-      <div class="bar"><i></i><i></i><i></i></div>
-      <img src="media/demo.gif" alt="Indicators demo: popover with usage windows, per-model costs and settings" loading="lazy">
-    </div>
-    <div class="shots reveal">
-      <img src="media/popover-light.png" alt="Popover in light mode" loading="lazy">
-      <img src="media/popover-dark.png" alt="Popover in dark mode" loading="lazy">
-    </div>
   </div>
 </section>
 
@@ -249,6 +207,7 @@
       <div class="card reveal"><div class="icon" style="background:linear-gradient(135deg,var(--claude),#a3512f)">A</div><h3>Real invoices, optionally</h3><p>Add an Anthropic admin key, an OpenAI admin key or an xAI management key and see what the vendor is actually billing you this month, next to the estimate.</p></div>
       <div class="card reveal"><div class="icon" style="background:linear-gradient(135deg,#8b93a7,#4b5163)">🔒</div><h3>Private by construction</h3><p>Everything runs on your Mac. Logs are read-only, tokens are used in memory for one request, keys live in your Keychain. No telemetry, ever.</p></div>
       <div class="card reveal"><div class="icon" style="background:linear-gradient(135deg,#34d3c2,#1e8f84)">&gt;_</div><h3>Terminal companion</h3><p><span class="mono">indicators-cli report</span> prints the same numbers for scripts and dashboards. JSON output included.</p></div>
+      <div class="card reveal"><div class="icon" style="background:linear-gradient(135deg,#f472b6,#b0347a)">⇄</div><h3>MCP server for model routing</h3><p><span class="mono">indicators-mcp</span> gives any agent your live headroom and answers "which model for this task?" from your own rules: primary model, fallbacks, and the usage threshold that flips between them.</p></div>
     </div>
   </div>
 </section>
@@ -302,6 +261,7 @@
       <div class="card"><h3>Does it show Codex / OpenAI rate limits?</h3><p>Yes, when Codex CLI is signed in with ChatGPT. With an API-key login you still get cost estimates from the Codex session logs.</p></div>
       <div class="card"><h3>How are costs calculated?</h3><p>Like ccusage: tokens from local logs × public API list prices (LiteLLM table), including cache reads, cache writes and the 1-hour cache tier. Optional admin keys add the real invoice.</p></div>
       <div class="card"><h3>Is anything sent to a server?</h3><p>No backend, no telemetry. Logs are read locally; tokens and keys only go to the vendor that issued them, to fetch your own usage.</p></div>
+      <div class="card"><h3>Can my agent use it to route between providers?</h3><p>Yes. Register <span class="mono">indicators-mcp</span> (ships inside the app) with Claude Code, Codex or any MCP client. Tools: get_usage, recommend_model, set_routing_rule, estimate_cost. Rules live in ~/.config/indicators/routing.json.</p></div>
       <div class="card"><h3>Which macOS versions?</h3><p>macOS 14 Sonoma and later, Apple Silicon and Intel. Built with SwiftUI; no Electron.</p></div>
       <div class="card"><h3>Do I need Xcode to build it?</h3><p>No. It is a SwiftPM package that builds with the Xcode Command Line Tools alone. Prebuilt releases are on GitHub.</p></div>
     </div>

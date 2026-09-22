@@ -7,6 +7,7 @@ let package = Package(
     products: [
         .executable(name: "Indicators", targets: ["Indicators"]),
         .executable(name: "indicators-cli", targets: ["IndicatorsCLI"]),
+        .executable(name: "indicators-mcp", targets: ["IndicatorsMCP"]),
         .library(name: "IndicatorsCore", targets: ["IndicatorsCore"]),
     ],
     targets: [
@@ -20,6 +21,11 @@ let package = Package(
             name: "IndicatorsCLI",
             dependencies: ["IndicatorsCore"],
             path: "Sources/IndicatorsCLI"
+        ),
+        .executableTarget(
+            name: "IndicatorsMCP",
+            dependencies: ["IndicatorsCore"],
+            path: "Sources/IndicatorsMCP"
         ),
         .testTarget(
             name: "IndicatorsCoreTests",

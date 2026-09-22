@@ -95,6 +95,47 @@ Nothing to configure for the basics: if you use Claude Code, Codex CLI or Gemini
 - **Gemini**: sign in to Gemini CLI with Google (`gemini` → *Login with Google*). API-key logins show costs but no quota buckets.
 - **Billing APIs** (optional, Settings → Billing APIs): Anthropic admin key (`sk-ant-admin…`), OpenAI admin key, xAI management key + team id. Keys are stored in your Keychain and only ever sent to the vendor that issued them.
 
+## MCP server: let your agent route between providers
+
+`indicators-mcp` ships inside the app bundle. It is a local MCP server (stdio) that exposes the same data to any agent, plus routing rules you define:
+
+| Tool | What it does |
+| --- | --- |
+| `get_usage` | Windows, % used, reset times, plan, cost estimates and billed spend per provider |
+| `recommend_model` | For a task, returns the primary model unless its provider is at/above the threshold, then the first fallback with headroom, with the reason |
+| `set_routing_rule` / `list_routing_rules` / `delete_routing_rule` | Manage rules in `~/.config/indicators/routing.json` (task `default` sets the catch-all) |
+| `estimate_cost` | USD cost of a request at list prices |
+| `list_models` | Models seen in your logs today and which CLIs are installed |
+
+Register it:
+
+```bash
+# Claude Code
+claude mcp add indicators -- /Applications/Indicators.app/Contents/MacOS/indicators-mcp
+
+# Codex CLI (~/.codex/config.toml)
+[mcp_servers.indicators]
+command = "/Applications/Indicators.app/Contents/MacOS/indicators-mcp"
+
+# Gemini CLI (~/.gemini/settings.json)
+{ "mcpServers": { "indicators": { "command": "/Applications/Indicators.app/Contents/MacOS/indicators-mcp" } } }
+```
+
+Example rules file:
+
+```json
+{
+  "defaultThreshold": 90,
+  "rules": [
+    { "task": "code-review", "primary": "claude-opus-5", "fallback": ["gpt-6-astra", "gemini-3.1-pro-preview"], "threshold": 85 },
+    { "task": "chat", "primary": "claude-sonnet-5", "fallback": ["gpt-5.4-mini"] }
+  ],
+  "fallbackRule": { "task": "default", "primary": "claude-sonnet-5", "fallback": ["gpt-6-astra"] }
+}
+```
+
+The server recommends; it does not switch models by itself. It shines in orchestrators and in agents that decide which CLI or API to delegate a subtask to.
+
 ## Privacy
 
 Everything runs locally. No telemetry, no backend, logs are read-only. See [SECURITY.md](SECURITY.md) for the exact files and endpoints.

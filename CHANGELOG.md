@@ -6,6 +6,16 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+### Added
+- `indicators-mcp`: local MCP server with `get_usage`, `recommend_model`, routing-rule management, `estimate_cost`, `list_models`.
+- README badges, live GitHub stats on the landing, one-time star nudge after a week.
+- Menu bar options: full names or initials, session/weekly/peak window, reset countdown.
+- Landing site (GitHub Pages) with install script, SEO metadata and `llms.txt`.
+
+### Fixed
+- Claude credentials are read through the `security` CLI, avoiding a Keychain prompt on every rebuild.
+- Live windows are kept from the last good answer when a refresh fails; 429s back off for 15 minutes.
+
 ## [0.1.0] - 2026-09-22
 
 ### Added

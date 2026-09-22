@@ -23,6 +23,7 @@ the Command Line Tools; CI runs them on every pull request.
 | `Sources/IndicatorsCore` | Platform-independent logic: models, pricing, log parsers, API fetchers |
 | `Sources/Indicators` | SwiftUI menu bar app |
 | `Sources/IndicatorsCLI` | `indicators-cli`, a terminal view of the same numbers (handy for debugging) |
+| `Sources/IndicatorsMCP` | `indicators-mcp`, MCP server over stdio: usage tools and routing rules |
 | `Tests/IndicatorsCoreTests` | Unit tests with inline fixtures |
 | `scripts/` | App bundling, icon generation, pricing table refresh |
 

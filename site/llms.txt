@@ -17,6 +17,9 @@ Requirements: macOS 14+. Builds with Xcode Command Line Tools only (SwiftPM).
 ## Cost method
 Token counts (input, cache read, cache write incl. 1-hour tier, output) × public API list prices from the LiteLLM pricing table. Numbers match ccusage for the same logs.
 
+## MCP server (model routing for agents)
+indicators-mcp (inside the app bundle, stdio JSON-RPC) exposes: get_usage, recommend_model(task), list/set/delete_routing_rule, estimate_cost, list_models. Rules in ~/.config/indicators/routing.json map a task to a primary model, ordered fallbacks and a saturation threshold; recommend_model returns the first candidate whose provider is below the threshold, with the reason. Register: claude mcp add indicators -- /Applications/Indicators.app/Contents/MacOS/indicators-mcp
+
 ## Privacy
 Runs entirely on device. Logs are read-only. Tokens read from other CLIs are used in memory for a single request to their own vendor. User-supplied keys live in the macOS Keychain.
 
