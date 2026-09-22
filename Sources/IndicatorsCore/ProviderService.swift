@@ -7,6 +7,30 @@ public final class ProviderService: @unchecked Sendable {
     private let caches: [Provider: ParseCache]
     private let lock = NSLock()
     private var lastLive: [Provider: (usage: LiveUsage, at: Date)] = [:]
+
+    /// Last good live answers survive restarts (and rate limits) so the menu bar never goes blank.
+    private struct LiveCacheEntry: Codable { var usage: LiveUsage; var at: Date }
+
+    private func loadLiveCache() {
+        guard let data = try? Data(contentsOf: AppPaths.liveCacheFile),
+              let decoded = try? JSONDecoder().decode([String: LiveCacheEntry].self, from: data) else { return }
+        lock.lock(); defer { lock.unlock() }
+        for (key, entry) in decoded {
+            if let provider = Provider(rawValue: key), Date().timeIntervalSince(entry.at) < 86400 * 3 {
+                lastLive[provider] = (entry.usage, entry.at)
+            }
+        }
+    }
+
+    private func saveLiveCache() {
+        lock.lock()
+        let snapshot = lastLive
+        lock.unlock()
+        var out: [String: LiveCacheEntry] = [:]
+        for (provider, value) in snapshot { out[provider.rawValue] = LiveCacheEntry(usage: value.usage, at: value.at) }
+        try? FileManager.default.createDirectory(at: AppPaths.supportDirectory, withIntermediateDirectories: true)
+        if let data = try? JSONEncoder().encode(out) { try? data.write(to: AppPaths.liveCacheFile, options: .atomic) }
+    }
     private var liveBackoffUntil: [Provider: Date] = [:]
 
     private func backoff(for provider: Provider) -> Date? {
@@ -20,8 +44,10 @@ public final class ProviderService: @unchecked Sendable {
     }
 
     private func rememberLive(_ usage: LiveUsage, for provider: Provider, at: Date) {
-        lock.lock(); defer { lock.unlock() }
+        lock.lock()
         lastLive[provider] = (usage, at)
+        lock.unlock()
+        saveLiveCache()
     }
 
     private func recallLive(for provider: Provider) -> (usage: LiveUsage, at: Date)? {
@@ -35,6 +61,7 @@ public final class ProviderService: @unchecked Sendable {
         var caches: [Provider: ParseCache] = [:]
         for p in Provider.allCases { caches[p] = ParseCache(fileURL: AppPaths.cacheFile(for: p)) }
         self.caches = caches
+        loadLiveCache()
     }
 
     private func currentCatalog() -> PricingCatalog {

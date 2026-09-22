@@ -55,7 +55,7 @@ public struct HTTPClient: Sendable {
 }
 
 /// Result of asking a vendor for the account's rate-limit windows.
-public struct LiveUsage: Sendable, Equatable {
+public struct LiveUsage: Sendable, Equatable, Codable {
     public var windows: [UsageWindow]
     public var plan: String?
     public var notes: [String]

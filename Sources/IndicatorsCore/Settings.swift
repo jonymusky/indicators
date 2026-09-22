@@ -88,4 +88,5 @@ public enum AppPaths {
     }
 
     public static var pricingFile: URL { supportDirectory.appendingPathComponent("pricing-litellm.json") }
+    public static var liveCacheFile: URL { supportDirectory.appendingPathComponent("live-usage-cache.json") }
 }
