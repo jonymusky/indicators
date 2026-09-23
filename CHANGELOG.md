@@ -6,6 +6,8 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-09-23
+
 ### Added
 - Cursor provider: plan usage and on-demand spend for the billing cycle from the local Cursor login.
 - OpenCode sessions as an additional local cost source, attributed per vendor.
