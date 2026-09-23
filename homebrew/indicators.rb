@@ -12,13 +12,13 @@ cask "indicators" do
     strategy :github_latest
   end
 
-  depends_on macos: ">= :sonoma"
+  depends_on macos: :sonoma
 
   app "Indicators.app"
   binary "#{appdir}/Indicators.app/Contents/MacOS/indicators-cli"
   binary "#{appdir}/Indicators.app/Contents/MacOS/indicators-mcp"
 
-  postflight do
+  postflight_steps do
     # The app is ad-hoc signed; clear the quarantine flag so Gatekeeper does not block the first launch.
     system_command "/usr/bin/xattr", args: ["-dr", "com.apple.quarantine", "#{appdir}/Indicators.app"]
   end
