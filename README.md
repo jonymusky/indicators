@@ -60,8 +60,10 @@
 ### Homebrew
 
 ```bash
-brew install --cask jonymusky/tap/indicators
+brew install --cask --no-quarantine jonymusky/tap/indicators
 ```
+
+`--no-quarantine` skips Gatekeeper's "unidentified developer" prompt for this ad-hoc signed build; without it, right-click → Open once.
 
 ### One-liner
 

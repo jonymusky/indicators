@@ -329,7 +329,8 @@
       <p class="sub">Requires macOS 14 Sonoma or later. The app is ad-hoc signed; the installer clears the quarantine flag for you.</p>
     </div>
     <div class="steps">
-      <div class="card reveal"><strong>Homebrew</strong><pre class="mono">brew install --cask jonymusky/tap/indicators</pre></div>
+      <div class="card reveal"><strong>Homebrew</strong><pre class="mono">brew install --cask --no-quarantine \
+  jonymusky/tap/indicators</pre></div>
       <div class="card reveal"><strong>One-liner</strong><pre class="mono">curl -fsSL https://indicators.jonymusky.com/install.sh | sh</pre></div>
       <div class="card reveal"><strong>Manual</strong><pre class="mono"><span class="c"># download Indicators.zip from the latest release,</span>
 <span class="c"># then move the app and open it</span>

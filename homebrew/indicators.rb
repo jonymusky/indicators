@@ -18,11 +18,11 @@ cask "indicators" do
   binary "#{appdir}/Indicators.app/Contents/MacOS/indicators-cli"
   binary "#{appdir}/Indicators.app/Contents/MacOS/indicators-mcp"
 
-  # The app is ad-hoc signed; clear the quarantine flag so Gatekeeper does not block the first launch.
-  installed_app = "#{appdir}/Indicators.app"
-  postflight_steps do
-    system_command "/usr/bin/xattr", args: ["-dr", "com.apple.quarantine", installed_app]
-  end
+  caveats <<~EOS
+    Indicators is ad-hoc signed (no Apple Developer ID yet). If macOS blocks the first
+    launch, right-click Indicators.app → Open, or install with:
+      brew install --cask --no-quarantine jonymusky/tap/indicators
+  EOS
 
   zap trash: [
     "~/Library/Application Support/Indicators",
