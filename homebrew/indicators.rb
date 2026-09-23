@@ -18,9 +18,10 @@ cask "indicators" do
   binary "#{appdir}/Indicators.app/Contents/MacOS/indicators-cli"
   binary "#{appdir}/Indicators.app/Contents/MacOS/indicators-mcp"
 
+  # The app is ad-hoc signed; clear the quarantine flag so Gatekeeper does not block the first launch.
+  installed_app = "#{appdir}/Indicators.app"
   postflight_steps do
-    # The app is ad-hoc signed; clear the quarantine flag so Gatekeeper does not block the first launch.
-    system_command "/usr/bin/xattr", args: ["-dr", "com.apple.quarantine", "#{appdir}/Indicators.app"]
+    system_command "/usr/bin/xattr", args: ["-dr", "com.apple.quarantine", installed_app]
   end
 
   zap trash: [
