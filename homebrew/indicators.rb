@@ -20,8 +20,8 @@ cask "indicators" do
 
   caveats <<~EOS
     Indicators is ad-hoc signed (no Apple Developer ID yet). If macOS blocks the first
-    launch, right-click Indicators.app → Open, or install with:
-      brew install --cask --no-quarantine jonymusky/tap/indicators
+    launch, right-click Indicators.app → Open once, or clear the quarantine flag:
+      xattr -dr com.apple.quarantine "#{appdir}/Indicators.app"
   EOS
 
   zap trash: [

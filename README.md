@@ -60,10 +60,10 @@
 ### Homebrew
 
 ```bash
-brew install --cask --no-quarantine jonymusky/tap/indicators
+brew install --cask jonymusky/tap/indicators
 ```
 
-`--no-quarantine` skips Gatekeeper's "unidentified developer" prompt for this ad-hoc signed build; without it, right-click → Open once.
+The build is ad-hoc signed, so Gatekeeper may block the first launch: right-click → Open once, or run `xattr -dr com.apple.quarantine /Applications/Indicators.app`.
 
 ### One-liner
 
