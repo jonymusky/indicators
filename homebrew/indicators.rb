@@ -20,7 +20,7 @@ cask "indicators" do
 
   postflight do
     # The app is ad-hoc signed; clear the quarantine flag so Gatekeeper does not block the first launch.
-    system_command "/usr/bin/xattr", args: ["-dr", "com.apple.quarantine", "#{appdir}/Indicators.app"], sudo: false
+    system_command "/usr/bin/xattr", args: ["-dr", "com.apple.quarantine", "#{appdir}/Indicators.app"]
   end
 
   zap trash: [
