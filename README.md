@@ -46,12 +46,22 @@
 | **OpenAI** | Plan windows from your Codex CLI / ChatGPT login (falls back to the last values Codex wrote to its log) | `~/.codex/sessions` rollouts | OpenAI Costs API (optional admin key) |
 | **Gemini** | Per-model quota buckets from your Gemini CLI Google login | `~/.gemini/tmp/*/chats` sessions | — |
 | **Grok** | xAI does not expose subscription limits | — | xAI Management API: month-to-date spend and prepaid balance (optional key + team id) |
+| **Cursor** | Plan usage and on-demand spend for the billing cycle, from your Cursor login | — | — |
+
+[OpenCode](https://github.com/sst/opencode) sessions are also read and attributed to the vendor they used (Anthropic → Claude, OpenAI, Google → Gemini, xAI → Grok).
 
 - **Menu bar**: `Claude 24% 5h · OpenAI 96%` — the window closest to its limit for each provider (configurable: names or initials, session or weekly, optional today's cost).
-- **Popover**: every window with its reset time, today / 7-day / month-to-date cost, tokens today, per-model breakdown, and the vendor-billed spend when a key is configured.
+- **Popover**: every window with its reset time, today / 7-day / month-to-date cost, a 30-day spend sparkline, tokens today, per-model breakdown, and the vendor-billed spend when a key is configured.
+- **Notifications**: optional macOS alerts when a window crosses 50/80/90/95% (your pick) and when a window resets. Each event fires once.
 - **Cost estimates** are computed exactly like ccusage: tokens from local logs × public API list prices from [LiteLLM's table](https://github.com/BerriAI/litellm/blob/main/model_prices_and_context_window.json) (bundled snapshot, refreshed automatically). Cache writes at the 1-hour TTL rate are priced correctly. If you are on a subscription, this is what the same work *would* have cost via API; if you use API keys, add them under Settings → Billing APIs to see the real invoice.
 
 ## Install
+
+### Homebrew
+
+```bash
+brew install --cask jonymusky/tap/indicators
+```
 
 ### One-liner
 
@@ -94,6 +104,7 @@ Nothing to configure for the basics: if you use Claude Code, Codex CLI or Gemini
 - **Claude**: sign in to Claude Code once (`claude`). Indicators reads the OAuth token from the Keychain item Claude Code creates; macOS will ask you to allow access the first time.
 - **OpenAI**: sign in to Codex CLI with ChatGPT (`codex login`). API-key logins have no plan limits.
 - **Gemini**: sign in to Gemini CLI with Google (`gemini` → *Login with Google*). API-key logins show costs but no quota buckets.
+- **Cursor**: just be signed in to the Cursor app. Indicators reads its local session and asks cursor.com for the billing cycle usage.
 - **Billing APIs** (optional, Settings → Billing APIs): Anthropic admin key (`sk-ant-admin…`), OpenAI admin key, xAI management key + team id. Keys are stored in your Keychain and only ever sent to the vendor that issued them.
 
 ## MCP server: let your agent route between providers
@@ -143,10 +154,9 @@ Everything runs locally. No telemetry, no backend, logs are read-only. See [SECU
 
 ## Roadmap
 
-- Notifications when a window crosses a threshold
-- Sparkline of daily spend
-- More sources: Cursor, OpenCode, Antigravity
-- Homebrew cask
+- Antigravity (its logs are protobuf without a public schema; help welcome)
+- History view: sessions per project with cost
+- Notarized builds
 
 Contributions welcome — see [CONTRIBUTING.md](CONTRIBUTING.md).
 

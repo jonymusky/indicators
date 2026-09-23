@@ -24,6 +24,9 @@ struct ProviderCardView: View {
             }
             if let local = snapshot.local {
                 costRow(local)
+                if local.dailyCosts.contains(where: { $0.cost > 0 }) {
+                    sparklineRow(local)
+                }
             }
             if let spend = snapshot.apiSpend {
                 apiSpendRow(spend)
@@ -53,6 +56,7 @@ struct ProviderCardView: View {
     private var noWindowsText: String {
         switch snapshot.provider {
         case .grok: return "Grok subscription limits are not exposed by xAI."
+        case .cursor: return "No Cursor quota data yet."
         default: return "No rate-limit data yet."
         }
     }
@@ -101,6 +105,20 @@ struct ProviderCardView: View {
         }
     }
 
+    private func sparklineRow(_ local: LocalUsageReport) -> some View {
+        VStack(alignment: .leading, spacing: 3) {
+            Sparkline(values: local.dailyCosts, accent: Theme.accent(for: snapshot.provider))
+            HStack {
+                Text("Last 30 days").font(.caption2).foregroundStyle(.tertiary)
+                Spacer()
+                if let peak = local.dailyCosts.max(by: { $0.cost < $1.cost }), peak.cost > 0 {
+                    Text("peak \(Format.money(peak.cost)) · avg \(Format.money(local.costLast30Days / 30))/day")
+                        .font(.caption2).foregroundStyle(.tertiary)
+                }
+            }
+        }
+    }
+
     private func apiSpendRow(_ spend: APISpend) -> some View {
         HStack(spacing: 6) {
             Image(systemName: "creditcard").font(.caption).foregroundStyle(.secondary)
@@ -119,6 +137,7 @@ struct ProviderCardView: View {
         case .openai: return "OpenAI"
         case .gemini: return "Google"
         case .grok: return "xAI"
+        case .cursor: return "Cursor"
         }
     }
 

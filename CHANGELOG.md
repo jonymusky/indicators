@@ -7,6 +7,12 @@ All notable changes to this project are documented here. The format follows
 ## [Unreleased]
 
 ### Added
+- Cursor provider: plan usage and on-demand spend for the billing cycle from the local Cursor login.
+- OpenCode sessions as an additional local cost source, attributed per vendor.
+- Notifications when a window crosses 50/80/90/95% and when it resets (opt-in, each event once).
+- 30-day spend sparkline per provider.
+- Homebrew cask (`homebrew/indicators.rb`, `scripts/update-cask.sh`).
+- Demo video (`docs/demo.mp4`, `make video`).
 - `indicators-mcp`: local MCP server with `get_usage`, `recommend_model`, routing-rule management, `estimate_cost`, `list_models`.
 - README badges, live GitHub stats on the landing, one-time star nudge after a week.
 - Menu bar options: full names or initials, session/weekly/peak window, reset countdown.

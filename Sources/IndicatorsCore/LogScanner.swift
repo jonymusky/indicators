@@ -199,6 +199,7 @@ public enum UsageAggregator {
         var today: [ModelUsage] = []
         var tokensToday = TokenUsage()
         var unpriced = Set<String>()
+        var costByDay: [String: Double] = [:]
 
         for (day, models) in perDayModel {
             guard let dayDate = date(fromDayKey: day, calendar: calendar) else { continue }
@@ -217,6 +218,7 @@ public enum UsageAggregator {
                     tokensToday += usage
                 }
             }
+            costByDay[day] = dayCost
             if day == todayKey { costToday += dayCost }
             if dayDate >= sevenDays { cost7 += dayCost }
             if dayDate >= thirtyDays { cost30 += dayCost }
@@ -224,9 +226,15 @@ public enum UsageAggregator {
         }
 
         today.sort { $0.cost > $1.cost }
+        var daily: [DailyCost] = []
+        for offset in stride(from: -29, through: 0, by: 1) {
+            let date = calendar.date(byAdding: .day, value: offset, to: startOfToday)!
+            let key = calendar.dayKey(for: date)
+            daily.append(DailyCost(day: key, cost: costByDay[key] ?? 0))
+        }
         return LocalUsageReport(today: today, costToday: costToday, costLast7Days: cost7, costLast30Days: cost30,
                                 costMonthToDate: costMTD, tokensToday: tokensToday, lastActivity: lastActivity,
-                                filesScanned: filesScanned, unpricedModels: unpriced.sorted())
+                                filesScanned: filesScanned, unpricedModels: unpriced.sorted(), dailyCosts: daily)
     }
 
     static func date(fromDayKey key: String, calendar: Calendar) -> Date? {
@@ -252,6 +260,9 @@ public struct LocalUsageService: Sendable {
         public var report: LocalUsageReport
         public var rateLimits: LocalRateLimits?
         public var rootsFound: [URL]
+        /// Raw (not yet deduplicated) events, so several sources can be merged before aggregation.
+        public var events: [UsageEvent]
+        public var filesScanned: Int
     }
 
     public func run(catalog: PricingCatalog, now: Date = Date(), environment: [String: String] = ProcessInfo.processInfo.environment,
@@ -287,6 +298,6 @@ public struct LocalUsageService: Sendable {
         cache.prune(keeping: files)
         cache.save()
         let report = UsageAggregator.report(events: events, catalog: catalog, now: now, filesScanned: files.count)
-        return Result(report: report, rateLimits: latestLimits, rootsFound: roots)
+        return Result(report: report, rateLimits: latestLimits, rootsFound: roots, events: events, filesScanned: files.count)
     }
 }

@@ -12,6 +12,8 @@ Indicators runs entirely on your Mac. There is no backend and no telemetry.
 | Codex CLI session | `~/.codex/auth.json` | One `GET https://chatgpt.com/backend-api/wham/usage` call per refresh |
 | Gemini CLI chats | `~/.gemini/tmp/*/chats/*.json` | Token counts |
 | Gemini CLI OAuth | `~/.gemini/oauth_creds.json` | One `POST cloudcode-pa.googleapis.com/v1internal:retrieveUserQuota` call per refresh |
+| Cursor session | `~/Library/Application Support/Cursor/User/globalStorage/state.vscdb` (read-only) | `GET https://cursor.com/api/usage-summary` and `/api/usage` per refresh |
+| OpenCode messages | `~/.local/share/opencode/storage/message/**.json` | Token counts, attributed to each vendor |
 | Your billing API keys | Keychain service `com.jonymusky.indicators` | Only sent to the vendor that issued them |
 
 All log access is read-only. Tokens read from other tools are used in memory for a single
@@ -20,7 +22,7 @@ request and never written anywhere by this app.
 ## Network endpoints
 
 `api.anthropic.com`, `chatgpt.com`, `cloudcode-pa.googleapis.com`, `oauth2.googleapis.com`,
-`api.openai.com`, `management-api.x.ai`, and `raw.githubusercontent.com` (pricing table).
+`api.openai.com`, `management-api.x.ai`, `cursor.com`, and `raw.githubusercontent.com` (pricing table).
 
 ## Reporting a vulnerability
 

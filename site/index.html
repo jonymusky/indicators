@@ -171,7 +171,7 @@
   <div class="inner">
     <span class="pill"><span class="dot"></span> Open source · macOS 14+ · zero telemetry</span>
     <h1>Your AI usage,<br><span class="grad">in the menu bar.</span></h1>
-    <p class="lead">Live rate limits for Claude, OpenAI and Gemini. Real costs computed from your own Claude Code, Codex and Gemini CLI logs, at API list prices. One glance, no dashboards.</p>
+    <p class="lead">Live rate limits for Claude, OpenAI, Gemini and Cursor. Real costs computed from your own Claude Code, Codex, Gemini CLI and OpenCode logs, at API list prices. One glance, no dashboards.</p>
     <div class="cta">
       <a class="btn primary" href="https://github.com/jonymusky/indicators/releases/latest" target="_blank" rel="noopener">⬇ Download for macOS</a>
       <a class="btn ghost" href="https://github.com/jonymusky/indicators" target="_blank" rel="noopener">★ Star on GitHub</a>
@@ -227,6 +227,7 @@
       <div class="card reveal"><div class="icon" style="background:linear-gradient(135deg,#7c8cf8,#4a5bd8)">⌘</div><h3>Native, tiny, fast</h3><p>SwiftUI menu bar app. No Electron, no accounts, no background daemons. Builds with the Xcode Command Line Tools alone.</p></div>
       <div class="card reveal"><div class="icon" style="background:linear-gradient(135deg,var(--claude),#a3512f)">A</div><h3>Real invoices, optionally</h3><p>Add an Anthropic admin key, an OpenAI admin key or an xAI management key and see what the vendor is actually billing you this month, next to the estimate.</p></div>
       <div class="card reveal"><div class="icon" style="background:linear-gradient(135deg,#8b93a7,#4b5163)">🔒</div><h3>Private by construction</h3><p>Everything runs on your Mac. Logs are read-only, tokens are used in memory for one request, keys live in your Keychain. No telemetry, ever.</p></div>
+      <div class="card reveal"><div class="icon" style="background:linear-gradient(135deg,#f9a8d4,#c2410c)">!</div><h3>Alerts before you hit the wall</h3><p>Optional macOS notifications when any window crosses 50 / 80 / 90 / 95%, and when it resets. Each event fires once. A 30-day spend sparkline shows where the money went.</p></div>
       <div class="card reveal"><div class="icon" style="background:linear-gradient(135deg,#34d3c2,#1e8f84)">&gt;_</div><h3>Terminal companion</h3><p><span class="mono">indicators-cli report</span> prints the same numbers for scripts and dashboards. JSON output included.</p></div>
       <div class="card reveal"><div class="icon" style="background:linear-gradient(135deg,#f472b6,#b0347a)">⇄</div><h3>MCP server for model routing</h3><p><span class="mono">indicators-mcp</span> gives any agent your live headroom and answers "which model for this task?" from your own rules: primary model, fallbacks, and the usage threshold that flips between them.</p></div>
     </div>
@@ -275,6 +276,8 @@
         <tr><td><span class="tag" style="background:var(--openai)"><svg><use href="#i-openai"/></svg></span>OpenAI</td><td>Plan windows from your Codex / ChatGPT login, log fallback</td><td>~/.codex/sessions rollouts</td><td>OpenAI Costs API</td></tr>
         <tr><td><span class="tag" style="background:var(--gemini)"><svg><use href="#i-gemini"/></svg></span>Gemini</td><td>Per-model quota buckets (Gemini CLI Google login)</td><td>~/.gemini/tmp chats</td><td>—</td></tr>
         <tr><td><span class="tag" style="background:#555c6e"><svg><use href="#i-grok"/></svg></span>Grok</td><td>Not exposed by xAI</td><td>—</td><td>xAI Management API: spend + prepaid balance</td></tr>
+        <tr><td><span class="tag" style="background:#5c6b9e">Cu</span>Cursor</td><td>Plan usage and on-demand spend per billing cycle (Cursor login)</td><td>—</td><td>—</td></tr>
+        <tr><td><span class="tag" style="background:#3b3f4d">OC</span>OpenCode</td><td>—</td><td>Sessions attributed to Claude / OpenAI / Gemini / Grok</td><td>—</td></tr>
       </tbody>
     </table>
   </div>
@@ -326,6 +329,7 @@
       <p class="sub">Requires macOS 14 Sonoma or later. The app is ad-hoc signed; the installer clears the quarantine flag for you.</p>
     </div>
     <div class="steps">
+      <div class="card reveal"><strong>Homebrew</strong><pre class="mono">brew install --cask jonymusky/tap/indicators</pre></div>
       <div class="card reveal"><strong>One-liner</strong><pre class="mono">curl -fsSL https://indicators.jonymusky.com/install.sh | sh</pre></div>
       <div class="card reveal"><strong>Manual</strong><pre class="mono"><span class="c"># download Indicators.zip from the latest release,</span>
 <span class="c"># then move the app and open it</span>

@@ -57,6 +57,23 @@ struct GeneralSettings: View {
                     Text("30 minutes").tag(30)
                 }
             }
+            Section("Notifications") {
+                Toggle("Notify when a window crosses a threshold", isOn: $store.settings.notificationsEnabled)
+                    .onChange(of: store.settings.notificationsEnabled) { _, on in if on { store.requestNotificationPermission() } }
+                HStack {
+                    Text("Thresholds")
+                    Spacer()
+                    ForEach([50, 80, 90, 95], id: \.self) { t in
+                        Toggle("\(t)%", isOn: thresholdBinding(t)).toggleStyle(.button).controlSize(.small)
+                    }
+                }
+                Toggle("Notify when a window resets", isOn: $store.settings.notifyOnReset)
+                HStack {
+                    Text(store.notificationStatus).font(.caption).foregroundStyle(.secondary)
+                    Spacer()
+                    Button("Send test") { store.sendTestNotification() }.controlSize(.small)
+                }
+            }
             Section("System") {
                 Toggle("Launch at login", isOn: $launchAtLogin.value)
                     .onChange(of: launchAtLogin.value) { _, enabled in toggleLogin(enabled) }
@@ -75,7 +92,19 @@ struct GeneralSettings: View {
         case .openai: return "Codex CLI session + logs"
         case .gemini: return "Gemini CLI session + logs"
         case .grok: return "xAI Management API only"
+        case .cursor: return "Cursor login (request quota)"
         }
+    }
+
+    private func thresholdBinding(_ t: Int) -> Binding<Bool> {
+        Binding(
+            get: { store.settings.notifyThresholds.contains(t) },
+            set: { on in
+                var set = Set(store.settings.notifyThresholds)
+                if on { set.insert(t) } else { set.remove(t) }
+                store.settings.notifyThresholds = set.sorted()
+            }
+        )
     }
 
     private func binding(for provider: Provider) -> Binding<Bool> {

@@ -10,6 +10,9 @@ public struct AppSettings: Sendable, Equatable {
     public var menuBarLabelStyle: MenuBarLabelStyle = .names
     public var menuBarWindow: MenuBarWindow = .peak
     public var lookbackDays: Int = 35
+    public var notificationsEnabled: Bool = false
+    public var notifyThresholds: [Int] = [80, 95]
+    public var notifyOnReset: Bool = true
 
     public init() {}
 
@@ -21,6 +24,9 @@ public struct AppSettings: Sendable, Equatable {
         static let showReset = "showResetInMenuBar"
         static let labelStyle = "menuBarLabelStyle"
         static let window = "menuBarWindow"
+        static let notify = "notificationsEnabled"
+        static let thresholds = "notifyThresholds"
+        static let notifyReset = "notifyOnReset"
     }
 
     public static func load(from defaults: UserDefaults = .standard) -> AppSettings {
@@ -34,6 +40,9 @@ public struct AppSettings: Sendable, Equatable {
         if defaults.object(forKey: Keys.showReset) != nil { s.showResetInMenuBar = defaults.bool(forKey: Keys.showReset) }
         if let raw = defaults.string(forKey: Keys.labelStyle), let style = MenuBarLabelStyle(rawValue: raw) { s.menuBarLabelStyle = style }
         if let raw = defaults.string(forKey: Keys.window), let window = MenuBarWindow(rawValue: raw) { s.menuBarWindow = window }
+        if defaults.object(forKey: Keys.notify) != nil { s.notificationsEnabled = defaults.bool(forKey: Keys.notify) }
+        if let t = defaults.array(forKey: Keys.thresholds) as? [Int], !t.isEmpty { s.notifyThresholds = t.sorted() }
+        if defaults.object(forKey: Keys.notifyReset) != nil { s.notifyOnReset = defaults.bool(forKey: Keys.notifyReset) }
         return s
     }
 
@@ -45,6 +54,9 @@ public struct AppSettings: Sendable, Equatable {
         defaults.set(showResetInMenuBar, forKey: Keys.showReset)
         defaults.set(menuBarLabelStyle.rawValue, forKey: Keys.labelStyle)
         defaults.set(menuBarWindow.rawValue, forKey: Keys.window)
+        defaults.set(notificationsEnabled, forKey: Keys.notify)
+        defaults.set(notifyThresholds, forKey: Keys.thresholds)
+        defaults.set(notifyOnReset, forKey: Keys.notifyReset)
     }
 }
 

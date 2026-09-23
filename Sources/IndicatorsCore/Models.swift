@@ -6,6 +6,7 @@ public enum Provider: String, CaseIterable, Codable, Identifiable, Sendable {
     case openai
     case gemini
     case grok
+    case cursor
 
     public var id: String { rawValue }
 
@@ -15,6 +16,7 @@ public enum Provider: String, CaseIterable, Codable, Identifiable, Sendable {
         case .openai: return "OpenAI"
         case .gemini: return "Gemini"
         case .grok: return "Grok"
+        case .cursor: return "Cursor"
         }
     }
 
@@ -25,6 +27,7 @@ public enum Provider: String, CaseIterable, Codable, Identifiable, Sendable {
         case .openai: return "O"
         case .gemini: return "G"
         case .grok: return "X"
+        case .cursor: return "Cu"
         }
     }
 
@@ -35,6 +38,7 @@ public enum Provider: String, CaseIterable, Codable, Identifiable, Sendable {
         case .openai: return "Codex CLI"
         case .gemini: return "Gemini CLI"
         case .grok: return "n/a"
+        case .cursor: return "n/a"
         }
     }
 }
@@ -141,10 +145,13 @@ public struct LocalUsageReport: Sendable, Equatable, Codable {
     public var filesScanned: Int
     /// Models seen in the window that had no price in the catalog.
     public var unpricedModels: [String]
+    /// Cost per local day for the last 30 days, oldest first, zeros included.
+    public var dailyCosts: [DailyCost]
 
     public init(today: [ModelUsage] = [], costToday: Double = 0, costLast7Days: Double = 0, costLast30Days: Double = 0,
                 costMonthToDate: Double = 0, tokensToday: TokenUsage = TokenUsage(), lastActivity: Date? = nil,
-                filesScanned: Int = 0, unpricedModels: [String] = []) {
+                filesScanned: Int = 0, unpricedModels: [String] = [], dailyCosts: [DailyCost] = []) {
+        self.dailyCosts = dailyCosts
         self.today = today
         self.costToday = costToday
         self.costLast7Days = costLast7Days
@@ -154,6 +161,17 @@ public struct LocalUsageReport: Sendable, Equatable, Codable {
         self.lastActivity = lastActivity
         self.filesScanned = filesScanned
         self.unpricedModels = unpricedModels
+    }
+}
+
+public struct DailyCost: Sendable, Equatable, Codable, Identifiable {
+    public var id: String { day }
+    public var day: String
+    public var cost: Double
+
+    public init(day: String, cost: Double) {
+        self.day = day
+        self.cost = cost
     }
 }
 

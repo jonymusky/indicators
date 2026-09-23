@@ -1,5 +1,6 @@
 import Foundation
 import SwiftUI
+import UserNotifications
 import IndicatorsCore
 
 /// Owns the refresh loop and the latest snapshot for every provider.
@@ -45,6 +46,7 @@ final class AppStore: ObservableObject {
         settings = AppSettings.load()
         scheduleTimer()
         evaluateStarNudge()
+        if settings.notificationsEnabled { refreshNotificationStatus() }
         Task {
             await refresh()
             await service.refreshPricing()
@@ -176,11 +178,69 @@ final class AppStore: ObservableObject {
             for provider in enabled {
                 group.addTask { await service.snapshot(for: provider, settings: settings) }
             }
-            for await snap in group { snapshots[snap.provider] = snap }
+            var fresh: [Provider: ProviderSnapshot] = [:]
+            for await snap in group {
+                fresh[snap.provider] = snap
+                snapshots[snap.provider] = snap
+            }
+            deliverAlerts(previous: previousSnapshots, current: fresh)
+            previousSnapshots = fresh
         }
         for provider in Provider.allCases where !enabled.contains(provider) { snapshots[provider] = nil }
         lastRefresh = Date()
         isRefreshing = false
+    }
+
+    // MARK: - Notifications
+
+    private var previousSnapshots: [Provider: ProviderSnapshot] = [:]
+    @Published var notificationStatus = "Not enabled"
+    private static let sentKeysDefault = "sentAlertKeys"
+
+    func requestNotificationPermission() {
+        UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound]) { [weak self] granted, _ in
+            Task { @MainActor in self?.notificationStatus = granted ? "Allowed by macOS" : "Blocked in System Settings → Notifications" }
+        }
+    }
+
+    func refreshNotificationStatus() {
+        UNUserNotificationCenter.current().getNotificationSettings { [weak self] s in
+            let text: String
+            switch s.authorizationStatus {
+            case .authorized, .provisional: text = "Allowed by macOS"
+            case .denied: text = "Blocked in System Settings → Notifications"
+            default: text = "Not requested yet"
+            }
+            Task { @MainActor in self?.notificationStatus = text }
+        }
+    }
+
+    func sendTestNotification() {
+        requestNotificationPermission()
+        post(title: "Indicators test", body: "Claude Weekly reached 80%. Resets Sun 14:00.", id: "test-\(UUID().uuidString)")
+    }
+
+    private func deliverAlerts(previous: [Provider: ProviderSnapshot], current: [Provider: ProviderSnapshot]) {
+        guard settings.notificationsEnabled, !previous.isEmpty else { return }
+        let defaults = UserDefaults.standard
+        var sent = Set(defaults.stringArray(forKey: Self.sentKeysDefault) ?? [])
+        let alerts = UsageAlerts.compute(previous: previous, current: current, thresholds: settings.notifyThresholds,
+                                         notifyOnReset: settings.notifyOnReset, alreadySent: sent)
+        for alert in alerts {
+            post(title: alert.title, body: alert.body, id: alert.key)
+            sent.insert(alert.key)
+        }
+        // Keep the list bounded; keys embed the reset cycle so old ones are never needed again.
+        defaults.set(Array(sent.suffix(500)), forKey: Self.sentKeysDefault)
+    }
+
+    private func post(title: String, body: String, id: String) {
+        let content = UNMutableNotificationContent()
+        content.title = title
+        content.body = body
+        content.sound = .default
+        let request = UNNotificationRequest(identifier: id, content: content, trigger: nil)
+        UNUserNotificationCenter.current().add(request) { _ in }
     }
 
     private func scheduleTimer() {

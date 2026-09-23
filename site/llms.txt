@@ -13,6 +13,10 @@ Requirements: macOS 14+. Builds with Xcode Command Line Tools only (SwiftPM).
 - OpenAI: plan rate-limit windows from the Codex CLI / ChatGPT login (fallback: last values in Codex logs). Costs from ~/.codex/sessions rollouts. Real spend via OpenAI Costs API.
 - Gemini: per-model quota buckets from the Gemini CLI Google login. Costs from ~/.gemini/tmp chats.
 - Grok: xAI exposes no subscription limits; spend and prepaid balance via xAI Management API.
+- Cursor: plan usage and on-demand spend for the billing cycle from the local Cursor login (cursor.com usage-summary).
+- OpenCode: local sessions attributed to each vendor.
+- Notifications when a window crosses a threshold or resets; 30-day spend sparkline.
+- Install: brew install --cask jonymusky/tap/indicators, or the curl one-liner, or the GitHub release.
 
 ## Cost method
 Token counts (input, cache read, cache write incl. 1-hour tier, output) × public API list prices from the LiteLLM pricing table. Numbers match ccusage for the same logs.

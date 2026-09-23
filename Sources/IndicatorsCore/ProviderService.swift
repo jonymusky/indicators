@@ -109,25 +109,36 @@ public final class ProviderService: @unchecked Sendable {
         let catalog = currentCatalog()
         var snap = ProviderSnapshot(provider: provider, updatedAt: now)
 
-        // Local logs (blocking file IO, run off the main actor).
-        let parser: LocalLogParser? = {
-            switch provider {
-            case .claude: return ClaudeCodeLogParser()
-            case .openai: return CodexLogParser()
-            case .gemini: return GeminiLogParser()
-            case .grok: return nil
-            }
-        }()
+        // Local logs (blocking file IO, run off the main actor). Several sources can feed one provider.
+        var parsers: [LocalLogParser] = []
+        switch provider {
+        case .claude: parsers = [ClaudeCodeLogParser(), OpenCodeLogParser(provider: .claude)]
+        case .openai: parsers = [CodexLogParser(), OpenCodeLogParser(provider: .openai)]
+        case .gemini: parsers = [GeminiLogParser(), OpenCodeLogParser(provider: .gemini)]
+        case .grok: parsers = [OpenCodeLogParser(provider: .grok)]
+        case .cursor: parsers = []
+        }
         var localLimits: LocalRateLimits?
-        if let parser, let cache = caches[provider] {
-            let service = LocalUsageService(parser: parser, cache: cache, lookbackDays: settings.lookbackDays)
-            let result = await Task.detached(priority: .utility) { service.run(catalog: catalog, now: now) }.value
-            if result.rootsFound.isEmpty {
-                snap.notes.append("\(provider.localSource) logs not found; local cost estimate unavailable.")
+        if !parsers.isEmpty {
+            let lookback = settings.lookbackDays
+            let results = await Task.detached(priority: .utility) { () -> [LocalUsageService.Result] in
+                parsers.enumerated().map { index, parser in
+                    let cacheURL = index == 0 ? AppPaths.cacheFile(for: provider)
+                        : AppPaths.supportDirectory.appendingPathComponent("parse-cache-\(provider.rawValue)-\(index).json")
+                    let cache = ParseCache(fileURL: cacheURL)
+                    return LocalUsageService(parser: parser, cache: cache, lookbackDays: lookback).run(catalog: catalog, now: now)
+                }
+            }.value
+            let found = results.filter { !$0.rootsFound.isEmpty }
+            if found.isEmpty {
+                if provider.localSource != "n/a" {
+                    snap.notes.append("\(provider.localSource) logs not found; local cost estimate unavailable.")
+                }
             } else {
-                snap.local = result.report
+                let events = found.flatMap(\.events)
+                snap.local = UsageAggregator.report(events: events, catalog: catalog, now: now, filesScanned: found.reduce(0) { $0 + $1.filesScanned })
             }
-            localLimits = result.rateLimits
+            localLimits = results.compactMap(\.rateLimits).max { $0.observedAt < $1.observedAt }
         }
 
         // Live rate limits. After a 429 the vendor is left alone for a while.
@@ -141,6 +152,7 @@ public final class ProviderService: @unchecked Sendable {
             case .openai: live = try await CodexUsageFetcher(client: client).fetch()
             case .gemini: live = try await GeminiQuotaFetcher(client: client).fetch()
             case .grok: live = nil
+            case .cursor: live = try await CursorUsageFetcher(client: client).fetch()
             }
             if let live {
                 snap.windows = live.windows
@@ -186,7 +198,7 @@ public final class ProviderService: @unchecked Sendable {
                 if let key = KeychainStore.get(.xaiManagementKey), let team = KeychainStore.get(.xaiTeamID) {
                     snap.apiSpend = try await XAIBillingFetcher(client: client).fetch(managementKey: key, teamID: team, now: now)
                 }
-            case .gemini:
+            case .gemini, .cursor:
                 break
             }
         } catch {
