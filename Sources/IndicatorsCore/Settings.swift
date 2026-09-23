@@ -19,6 +19,7 @@ public struct AppSettings: Sendable, Equatable {
     enum Keys {
         static let interval = "refreshIntervalMinutes"
         static let enabled = "enabledProviders"
+        static let known = "knownProviders"
         static let showPercent = "showPercentInMenuBar"
         static let showCost = "showCostInMenuBar"
         static let showReset = "showResetInMenuBar"
@@ -34,6 +35,9 @@ public struct AppSettings: Sendable, Equatable {
         if defaults.object(forKey: Keys.interval) != nil { s.refreshIntervalMinutes = max(1, defaults.integer(forKey: Keys.interval)) }
         if let raw = defaults.stringArray(forKey: Keys.enabled) {
             s.enabledProviders = Set(raw.compactMap(Provider.init(rawValue:)))
+            // Providers added in a newer version start enabled instead of silently missing.
+            let known = Set((defaults.stringArray(forKey: Keys.known) ?? raw).compactMap(Provider.init(rawValue:)))
+            for provider in Provider.allCases where !known.contains(provider) { s.enabledProviders.insert(provider) }
         }
         if defaults.object(forKey: Keys.showPercent) != nil { s.showPercentInMenuBar = defaults.bool(forKey: Keys.showPercent) }
         if defaults.object(forKey: Keys.showCost) != nil { s.showCostInMenuBar = defaults.bool(forKey: Keys.showCost) }
@@ -49,6 +53,7 @@ public struct AppSettings: Sendable, Equatable {
     public func save(to defaults: UserDefaults = .standard) {
         defaults.set(refreshIntervalMinutes, forKey: Keys.interval)
         defaults.set(enabledProviders.map(\.rawValue).sorted(), forKey: Keys.enabled)
+        defaults.set(Provider.allCases.map(\.rawValue), forKey: Keys.known)
         defaults.set(showPercentInMenuBar, forKey: Keys.showPercent)
         defaults.set(showCostInMenuBar, forKey: Keys.showCost)
         defaults.set(showResetInMenuBar, forKey: Keys.showReset)
