@@ -118,7 +118,9 @@ public struct CursorUsageFetcher: Sendable {
         var windows: [UsageWindow] = []
         let cycleEnd = JSON.date(obj["billingCycleEnd"])
         let individual = JSON.dict(obj["individualUsage"])
-        func dollars(_ cents: Double) -> String { String(format: cents >= 100 ? "$%.0f" : "$%.2f", cents / 100) }
+        func dollars(_ cents: Double) -> String {
+            cents.truncatingRemainder(dividingBy: 100) == 0 ? String(format: "$%.0f", cents / 100) : String(format: "$%.2f", cents / 100)
+        }
         if let plan = JSON.dict(individual?["plan"]) {
             let used = JSON.double(plan["used"]) ?? 0
             let limit = JSON.double(plan["limit"]) ?? 0
