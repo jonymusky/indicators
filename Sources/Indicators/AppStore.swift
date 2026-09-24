@@ -48,6 +48,10 @@ final class AppStore: ObservableObject {
         evaluateStarNudge()
         if settings.notificationsEnabled { refreshNotificationStatus() }
         Task {
+            try? await Task.sleep(for: .seconds(20))
+            await checkForUpdates()
+        }
+        Task {
             await refresh()
             await service.refreshPricing()
         }
@@ -191,6 +195,52 @@ final class AppStore: ObservableObject {
         isRefreshing = false
     }
 
+    // MARK: - Updates
+
+    @Published var availableUpdate: UpdateChecker.Release?
+    @Published var lastUpdateCheck: Date?
+    @Published var updateCheckStatus = ""
+    private static let skippedVersionKey = "skippedUpdateVersion"
+    private static let lastUpdateCheckKey = "lastUpdateCheckAt"
+
+    var currentVersion: String {
+        Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "0.0.0"
+    }
+
+    var installedViaHomebrew: Bool { UpdateChecker.installedViaHomebrew() }
+
+    /// Once a day at most, unless forced from Settings.
+    func checkForUpdates(force: Bool = false) async {
+        guard settings.checkForUpdates || force else { return }
+        let defaults = UserDefaults.standard
+        if !force, let last = defaults.object(forKey: Self.lastUpdateCheckKey) as? Date, Date().timeIntervalSince(last) < 86400 { return }
+        do {
+            let release = try await UpdateChecker(client: service.client).latest()
+            defaults.set(Date(), forKey: Self.lastUpdateCheckKey)
+            lastUpdateCheck = Date()
+            let skipped = defaults.string(forKey: Self.skippedVersionKey)
+            if UpdateChecker.isNewer(release.version, than: currentVersion), force || release.version != skipped {
+                availableUpdate = release
+                updateCheckStatus = "Version \(release.version) is available"
+            } else {
+                availableUpdate = nil
+                updateCheckStatus = "You're on the latest version (\(currentVersion))"
+            }
+        } catch {
+            updateCheckStatus = "Could not check: \(error.localizedDescription)"
+        }
+    }
+
+    func skipAvailableUpdate() {
+        if let v = availableUpdate?.version { UserDefaults.standard.set(v, forKey: Self.skippedVersionKey) }
+        availableUpdate = nil
+    }
+
+    func openAvailableUpdate() {
+        guard let release = availableUpdate else { return }
+        NSWorkspace.shared.open(release.url)
+    }
+
     // MARK: - Notifications
 
     private var previousSnapshots: [Provider: ProviderSnapshot] = [:]
@@ -247,7 +297,10 @@ final class AppStore: ObservableObject {
         timer?.invalidate()
         let interval = TimeInterval(max(settings.refreshIntervalMinutes, 1) * 60)
         timer = Timer.scheduledTimer(withTimeInterval: interval, repeats: true) { [weak self] _ in
-            Task { @MainActor in await self?.refresh() }
+            Task { @MainActor in
+                await self?.refresh()
+                await self?.checkForUpdates()
+            }
         }
     }
 }

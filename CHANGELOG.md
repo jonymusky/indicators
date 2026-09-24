@@ -6,6 +6,9 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+### Added
+- Daily update check against GitHub releases, with an in-popover banner (download, or the `brew upgrade` command when installed via Homebrew) and "skip this version". Can be disabled in Settings.
+
 ## [0.2.0] - 2026-09-23
 
 ### Added

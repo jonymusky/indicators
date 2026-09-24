@@ -75,6 +75,13 @@ struct GeneralSettings: View {
                 }
             }
             Section("System") {
+                Toggle("Check for updates daily", isOn: $store.settings.checkForUpdates)
+                HStack {
+                    Text(store.updateCheckStatus.isEmpty ? "Version \(store.currentVersion)" : store.updateCheckStatus)
+                        .font(.caption).foregroundStyle(.secondary)
+                    Spacer()
+                    Button("Check now") { Task { await store.checkForUpdates(force: true) } }.controlSize(.small)
+                }
                 Toggle("Launch at login", isOn: $launchAtLogin.value)
                     .onChange(of: launchAtLogin.value) { _, enabled in toggleLogin(enabled) }
                 if let error = loginError.value {

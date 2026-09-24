@@ -47,6 +47,15 @@ final class NewSourcesTests: XCTestCase {
         XCTAssertNotNil(usage.windows[0].resetsAt)
     }
 
+    func testVersionComparison() {
+        XCTAssertTrue(UpdateChecker.isNewer("0.3.0", than: "0.2.0"))
+        XCTAssertTrue(UpdateChecker.isNewer("1.0", than: "0.9.9"))
+        XCTAssertFalse(UpdateChecker.isNewer("0.2.0", than: "0.2.0"))
+        XCTAssertFalse(UpdateChecker.isNewer("0.2.0-beta", than: "0.2.0"))
+        XCTAssertTrue(UpdateChecker.isNewer("0.2.1", than: "0.2"))
+        XCTAssertEqual(UpdateChecker.normalize("v0.2.0"), "0.2.0")
+    }
+
     func testCursorJWTSubject() {
         // header.payload.signature with payload {"sub":"auth0|user_abc"}
         let payload = Data(#"{"sub":"auth0|user_abc"}"#.utf8).base64EncodedString().replacingOccurrences(of: "=", with: "")

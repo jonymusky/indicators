@@ -13,6 +13,7 @@ public struct AppSettings: Sendable, Equatable {
     public var notificationsEnabled: Bool = false
     public var notifyThresholds: [Int] = [80, 95]
     public var notifyOnReset: Bool = true
+    public var checkForUpdates: Bool = true
 
     public init() {}
 
@@ -28,6 +29,7 @@ public struct AppSettings: Sendable, Equatable {
         static let notify = "notificationsEnabled"
         static let thresholds = "notifyThresholds"
         static let notifyReset = "notifyOnReset"
+        static let updates = "checkForUpdates"
     }
 
     public static func load(from defaults: UserDefaults = .standard) -> AppSettings {
@@ -47,6 +49,7 @@ public struct AppSettings: Sendable, Equatable {
         if defaults.object(forKey: Keys.notify) != nil { s.notificationsEnabled = defaults.bool(forKey: Keys.notify) }
         if let t = defaults.array(forKey: Keys.thresholds) as? [Int], !t.isEmpty { s.notifyThresholds = t.sorted() }
         if defaults.object(forKey: Keys.notifyReset) != nil { s.notifyOnReset = defaults.bool(forKey: Keys.notifyReset) }
+        if defaults.object(forKey: Keys.updates) != nil { s.checkForUpdates = defaults.bool(forKey: Keys.updates) }
         return s
     }
 
@@ -62,6 +65,7 @@ public struct AppSettings: Sendable, Equatable {
         defaults.set(notificationsEnabled, forKey: Keys.notify)
         defaults.set(notifyThresholds, forKey: Keys.thresholds)
         defaults.set(notifyOnReset, forKey: Keys.notifyReset)
+        defaults.set(checkForUpdates, forKey: Keys.updates)
     }
 }
 

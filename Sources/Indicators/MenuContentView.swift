@@ -31,6 +31,9 @@ struct MenuContentView: View {
                 if store.enabledProviders.isEmpty {
                     emptyState
                 }
+                if let update = store.availableUpdate {
+                    updateBanner(update)
+                }
                 if store.showStarNudge {
                     starNudge
                 }
@@ -107,6 +110,32 @@ struct MenuContentView: View {
             }
             .opacity(0.001)
         )
+    }
+
+    private func updateBanner(_ release: UpdateChecker.Release) -> some View {
+        HStack(spacing: 10) {
+            Image(systemName: "arrow.down.circle.fill").foregroundStyle(Theme.level(0))
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Indicators \(release.version) is available").font(.caption.weight(.semibold))
+                Text(store.installedViaHomebrew ? "Run: brew upgrade --cask indicators" : "You have \(store.currentVersion). Download the new release.")
+                    .font(.caption2).foregroundStyle(.secondary)
+            }
+            Spacer()
+            if store.installedViaHomebrew {
+                Button("Copy") {
+                    NSPasteboard.general.clearContents()
+                    NSPasteboard.general.setString("brew upgrade --cask indicators", forType: .string)
+                }.controlSize(.small)
+            } else {
+                Button("Download") { store.openAvailableUpdate() }.controlSize(.small)
+            }
+            Button { store.skipAvailableUpdate() } label: { Image(systemName: "xmark") }
+                .buttonStyle(.borderless).controlSize(.small).foregroundStyle(.secondary)
+                .help("Skip this version")
+        }
+        .padding(10)
+        .background(RoundedRectangle(cornerRadius: 12, style: .continuous).fill(Theme.level(0).opacity(0.08)))
+        .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous).stroke(Theme.level(0).opacity(0.25)))
     }
 
     private var starNudge: some View {
