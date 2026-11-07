@@ -40,10 +40,13 @@ final class NewSourcesTests: XCTestCase {
         let obj = try XCTUnwrap(JSONSerialization.jsonObject(with: Data(json.utf8)) as? [String: Any])
         let usage = CursorUsageFetcher.parseSummary(obj)
         XCTAssertEqual(usage.plan, "Pro")
-        XCTAssertEqual(usage.windows.count, 2)
+        XCTAssertEqual(usage.windows.count, 4)
+        XCTAssertEqual(usage.windows[1].label, "Auto")
+        XCTAssertEqual(usage.windows[1].percentUsed, 12.5, accuracy: 1e-9)
+        XCTAssertEqual(usage.windows[2].label, "Named models")
         XCTAssertEqual(usage.windows[0].label, "Plan usage ($14.50 of $20)")
         XCTAssertEqual(usage.windows[0].percentUsed, 72.5, accuracy: 1e-9)
-        XCTAssertEqual(usage.windows[1].label, "On-demand spend $3.20 (no limit)")
+        XCTAssertEqual(usage.windows[3].label, "On-demand spend $3.20 (no limit)")
         XCTAssertNotNil(usage.windows[0].resetsAt)
     }
 

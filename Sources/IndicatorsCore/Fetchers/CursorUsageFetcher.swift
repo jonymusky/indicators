@@ -179,6 +179,13 @@ public struct CursorUsageFetcher: Sendable {
             let percent = JSON.double(plan["totalPercentUsed"]) ?? (limit > 0 ? used / limit * 100 : 0)
             let label = limit > 0 ? "Plan usage (\(dollars(used)) of \(dollars(limit)))" : "Plan usage"
             windows.append(UsageWindow(label: label, percentUsed: percent, resetsAt: cycleEnd))
+            // Cursor splits the pool between Auto and explicitly chosen (API-priced) models.
+            if limit > 0, let auto = JSON.double(plan["autoPercentUsed"]) {
+                windows.append(UsageWindow(label: "Auto", percentUsed: auto, resetsAt: cycleEnd))
+            }
+            if limit > 0, let api = JSON.double(plan["apiPercentUsed"]) {
+                windows.append(UsageWindow(label: "Named models", percentUsed: api, resetsAt: cycleEnd))
+            }
         }
         if let onDemand = JSON.dict(individual?["onDemand"]), (JSON.int(onDemand["enabled"]) ?? 0) != 0 || (JSON.double(onDemand["used"]) ?? 0) > 0 {
             let used = JSON.double(onDemand["used"]) ?? 0
@@ -202,6 +209,9 @@ public struct CursorUsageFetcher: Sendable {
         let labels: [(String, String)] = [("gpt-4", "Premium requests"), ("gpt-4-32k", "Premium (32k)"), ("gpt-3.5-turbo", "Basic requests")]
         for (key, label) in labels {
             guard let bucket = JSON.dict(obj[key]), let used = JSON.int(bucket["numRequests"]) else { continue }
+            if let max = JSON.int(bucket["maxTokenUsage"]), max > 0, let tokens = JSON.int(bucket["numTokens"]) {
+                windows.append(UsageWindow(label: "\(label) tokens", percentUsed: Double(tokens) / Double(max) * 100, resetsAt: resets))
+            }
             if let max = JSON.int(bucket["maxRequestUsage"]), max > 0 {
                 windows.append(UsageWindow(label: "\(label) (\(used)/\(max))", percentUsed: Double(used) / Double(max) * 100, resetsAt: resets))
             } else if used > 0 && key == "gpt-4" {
