@@ -1,5 +1,6 @@
 import Foundation
 import SQLite3
+import CommonCrypto
 
 /// Reads the Cursor editor's session from its local state database and asks cursor.com for the
 /// plan's request usage. Read-only; the token is used in memory for one request.
@@ -26,19 +27,68 @@ public struct CursorUsageFetcher: Sendable {
     struct Credentials {
         var token: String
         var userID: String
+        var membership: String?
     }
 
     func loadCredentials() throws -> Credentials {
         guard FileManager.default.fileExists(atPath: databaseURL.path) else {
             throw CredentialError.missing("Cursor is not installed.")
         }
-        guard let token = Self.readItem(key: "cursorAuth/accessToken", from: databaseURL), !token.isEmpty else {
+        guard let stored = Self.readItem(key: "cursorAuth/accessToken", from: databaseURL), !stored.isEmpty else {
             throw CredentialError.missing("Cursor is not signed in.")
         }
-        guard let userID = Self.userID(fromJWT: token) else {
+        var token = stored
+        // Cursor 3.x encrypts the session at rest with Electron safeStorage, keyed from the login keychain.
+        if Self.isSafeStorage(stored) {
+            guard let password = KeychainCLI.read(service: "Cursor Safe Storage") else {
+                throw CredentialError.missing("Cursor encrypts its session: allow Indicators to read \"Cursor Safe Storage\" in the Keychain prompt.")
+            }
+            guard let plain = Self.decryptSafeStorage(stored, password: password), !plain.isEmpty else {
+                throw CredentialError.missing("Could not decrypt the Cursor session. Sign out and in again in Cursor.")
+            }
+            token = plain
+        }
+        let authID = Self.readItem(key: "cursorAuth/stripeMembershipAuthId", from: databaseURL)
+        guard let userID = Self.userID(fromJWT: token) ?? authID.flatMap(Self.userID(fromAuthID:)) else {
             throw CredentialError.missing("Cursor session token is not in the expected format.")
         }
-        return Credentials(token: token, userID: userID)
+        let membership = Self.readItem(key: "cursorAuth/stripeMembershipType", from: databaseURL)
+        return Credentials(token: token, userID: userID, membership: membership)
+    }
+
+    static let safeStoragePrefix = "cursor-safe-storage:"
+
+    static func isSafeStorage(_ value: String) -> Bool { value.hasPrefix(safeStoragePrefix) }
+
+    /// `cursor-safe-storage:v1:<base64>` where the payload is Chromium's macOS safeStorage blob:
+    /// `"v10"` + AES-128-CBC(PKCS7), key = PBKDF2-SHA1(keychain password, "saltysalt", 1003 rounds), IV = 16 spaces.
+    static func decryptSafeStorage(_ value: String, password: String) -> String? {
+        guard let encoded = value.split(separator: ":").last,
+              var blob = Data(base64Encoded: String(encoded)) else { return nil }
+        if blob.starts(with: Array("v10".utf8)) || blob.starts(with: Array("v11".utf8)) { blob = blob.dropFirst(3) }
+        guard !blob.isEmpty, blob.count % kCCBlockSizeAES128 == 0 else { return nil }
+
+        var key = [UInt8](repeating: 0, count: kCCKeySizeAES128)
+        let salt = Array("saltysalt".utf8)
+        let derived = CCKeyDerivationPBKDF(CCPBKDFAlgorithm(kCCPBKDF2), password, password.utf8.count,
+                                           salt, salt.count, CCPseudoRandomAlgorithm(kCCPRFHmacAlgSHA1), 1003,
+                                           &key, key.count)
+        guard derived == kCCSuccess else { return nil }
+
+        let iv = [UInt8](repeating: 0x20, count: kCCBlockSizeAES128)
+        let input = [UInt8](blob)
+        var output = [UInt8](repeating: 0, count: input.count + kCCBlockSizeAES128)
+        var written = 0
+        let status = CCCrypt(CCOperation(kCCDecrypt), CCAlgorithm(kCCAlgorithmAES), CCOptions(kCCOptionPKCS7Padding),
+                             key, key.count, iv, input, input.count, &output, output.count, &written)
+        guard status == kCCSuccess else { return nil }
+        return String(bytes: output.prefix(written), encoding: .utf8)?.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    /// `google-oauth2|user_123` → `user_123`.
+    static func userID(fromAuthID authID: String) -> String? {
+        guard let last = authID.split(separator: "|").last, !last.isEmpty else { return nil }
+        return String(last)
     }
 
     /// `SELECT value FROM ItemTable WHERE key = ?` on Cursor's SQLite state store, opened read-only.
@@ -84,12 +134,14 @@ public struct CursorUsageFetcher: Sendable {
         guard let obj = json as? [String: Any] else { throw HTTPError.invalidResponse }
         Self.debugKeys(obj, label: "usage")
         let legacy = Self.parse(obj)
+        var result = legacy
         if var summary {
             summary.windows += legacy.windows
             if summary.windows.isEmpty { summary.notes = legacy.notes }
-            return summary
+            result = summary
         }
-        return legacy
+        if result.plan == nil, let m = creds.membership, !m.isEmpty { result.plan = m.prefix(1).uppercased() + m.dropFirst() }
+        return result
     }
 
     /// `INDICATORS_DEBUG_KEYS=1` prints the key tree of vendor responses (never values) to stderr.

@@ -63,6 +63,17 @@ final class NewSourcesTests: XCTestCase {
         XCTAssertNil(CursorUsageFetcher.userID(fromJWT: "nope"))
     }
 
+    func testCursorSafeStorageDecryption() {
+        // Generated with openssl: PBKDF2-SHA1("test-password", "saltysalt", 1003) AES-128-CBC, IV of spaces, "v10" prefix.
+        let stored = "cursor-safe-storage:v1:djEwsZ4sxFwtHRRXROZDGKqTLx5c+9PTNWSiBfCYxcL3ThsTrX1lN/dBsvndssqHHv3wczRu8th9pNrgH2BvT9FKvuiqD9PMD9MGzAIEHzNcgaA="
+        XCTAssertTrue(CursorUsageFetcher.isSafeStorage(stored))
+        let token = CursorUsageFetcher.decryptSafeStorage(stored, password: "test-password")
+        XCTAssertEqual(token, "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJnb29nbGUtb2F1dGgyfHVzZXJfYWJjIn0.sig")
+        XCTAssertEqual(token.flatMap(CursorUsageFetcher.userID(fromJWT:)), "user_abc")
+        XCTAssertNil(CursorUsageFetcher.decryptSafeStorage(stored, password: "wrong"))
+        XCTAssertEqual(CursorUsageFetcher.userID(fromAuthID: "google-oauth2|user_xyz"), "user_xyz")
+    }
+
     func testDailyCostsSeries() {
         let cal = Calendar.current
         let now = cal.date(from: DateComponents(year: 2026, month: 9, day: 22, hour: 12))!

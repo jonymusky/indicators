@@ -61,19 +61,7 @@ public struct ClaudeUsageFetcher: Sendable {
     }
 
     static func readKeychainViaCLI() -> Data? {
-        let process = Process()
-        process.executableURL = URL(fileURLWithPath: "/usr/bin/security")
-        process.arguments = ["find-generic-password", "-s", keychainService, "-w"]
-        let pipe = Pipe()
-        process.standardOutput = pipe
-        process.standardError = FileHandle.nullDevice
-        do { try process.run() } catch { return nil }
-        let data = pipe.fileHandleForReading.readDataToEndOfFile()
-        process.waitUntilExit()
-        guard process.terminationStatus == 0 else { return nil }
-        // `security -w` prints the raw value followed by a newline.
-        let trimmed = String(decoding: data, as: UTF8.self).trimmingCharacters(in: .whitespacesAndNewlines)
-        return Data(trimmed.utf8)
+        KeychainCLI.read(service: keychainService).map { Data($0.utf8) }
     }
 
     public func fetch() async throws -> LiveUsage {

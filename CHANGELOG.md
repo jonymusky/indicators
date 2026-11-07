@@ -6,6 +6,10 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+### Fixed
+- Cursor usage works again with Cursor 3.x, which encrypts its session token at rest (`cursor-safe-storage:v1`). The key is read from the "Cursor Safe Storage" Keychain item through `/usr/bin/security`, so the "Always Allow" answer survives app updates.
+- Cursor falls back to the locally stored account id when the session token is not a JWT, and shows the membership type as the plan when the API does not report one.
+
 ## [0.2.1] - 2026-09-23
 
 ### Added
