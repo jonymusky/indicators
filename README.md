@@ -45,8 +45,8 @@
 | **Claude** | 5-hour session, weekly, per-model weekly, extra usage — from your Claude Code login | `~/.claude/projects` transcripts | Anthropic Admin API (optional key) |
 | **OpenAI** | Plan windows from your Codex CLI / ChatGPT login (falls back to the last values Codex wrote to its log) | `~/.codex/sessions` rollouts | OpenAI Costs API (optional admin key) |
 | **Gemini** | Per-model quota buckets from your Gemini CLI Google login | `~/.gemini/tmp/*/chats` sessions | — |
-| **Grok** | xAI does not expose subscription limits | — | xAI Management API: month-to-date spend and prepaid balance (optional key + team id) |
-| **Cursor** | Plan usage and on-demand spend for the billing cycle, from your Cursor login | — | — |
+| **Grok** | Grok Bot usage pool with its reset, from your Grok Bot app login (xAI does not expose other subscription limits) | — | xAI Management API: month-to-date spend and prepaid balance (optional key + team id) |
+| **Cursor** | Plan usage (with the Auto / named-model split) and on-demand spend for the billing cycle, from your Cursor login | — | — |
 
 [OpenCode](https://github.com/sst/opencode) sessions are also read and attributed to the vendor they used (Anthropic → Claude, OpenAI, Google → Gemini, xAI → Grok).
 
@@ -106,7 +106,8 @@ Nothing to configure for the basics: if you use Claude Code, Codex CLI or Gemini
 - **Claude**: sign in to Claude Code once (`claude`). Indicators reads the OAuth token from the Keychain item Claude Code creates; macOS will ask you to allow access the first time.
 - **OpenAI**: sign in to Codex CLI with ChatGPT (`codex login`). API-key logins have no plan limits.
 - **Gemini**: sign in to Gemini CLI with Google (`gemini` → *Login with Google*). API-key logins show costs but no quota buckets.
-- **Cursor**: just be signed in to the Cursor app. Indicators reads its local session and asks cursor.com for the billing cycle usage.
+- **Cursor**: just be signed in to the Cursor app. Indicators reads its local session and asks cursor.com for the billing cycle usage. Cursor 3.x encrypts the session, so macOS asks once to let `security` read "Cursor Safe Storage": choose Always Allow.
+- **Grok Bot**: just be signed in to the Grok Bot app. Indicators reads its local session (macOS asks once for "Grok Bot Safe Storage") and shows the usage pool on the Grok card.
 - **Billing APIs** (optional, Settings → Billing APIs): Anthropic admin key (`sk-ant-admin…`), OpenAI admin key, xAI management key + team id. Keys are stored in your Keychain and only ever sent to the vendor that issued them.
 
 ## MCP server: let your agent route between providers

@@ -77,6 +77,29 @@ final class NewSourcesTests: XCTestCase {
         XCTAssertEqual(CursorUsageFetcher.userID(fromAuthID: "google-oauth2|user_xyz"), "user_xyz")
     }
 
+    func testGrokBotUsageParsing() throws {
+        let json = """
+        {"usagePercent":31.4,"nextResetTimestampUtc":"2026-11-11T13:20:59Z","grokPlanLabel":"Grok Bot Plan","includedLimitZero":false}
+        """
+        let obj = try XCTUnwrap(JSONSerialization.jsonObject(with: Data(json.utf8)) as? [String: Any])
+        let usage = GrokBotUsageFetcher.parse(obj)
+        XCTAssertEqual(usage.plan, "Grok Bot Plan")
+        XCTAssertEqual(usage.windows.count, 1)
+        XCTAssertEqual(usage.windows[0].label, "Grok Bot")
+        XCTAssertEqual(usage.windows[0].percentUsed, 31.4, accuracy: 1e-9)
+        XCTAssertNotNil(usage.windows[0].resetsAt)
+
+        let none = GrokBotUsageFetcher.parse(["usagePercent": 0, "includedLimitZero": true])
+        XCTAssertTrue(none.windows.isEmpty)
+        XCTAssertFalse(none.notes.isEmpty)
+    }
+
+    func testGrokBotActiveAccountToken() {
+        let accounts = #"{"active":"b","accounts":{"a":{"cursor-access-token":"djEwAAA"},"b":{"cursor-access-token":"djEwBBB"}}}"#
+        XCTAssertEqual(GrokBotUsageFetcher.activeEncryptedToken(secrets: ["version": 1, "cursor-accounts": accounts]), "djEwBBB")
+        XCTAssertNil(GrokBotUsageFetcher.activeEncryptedToken(secrets: ["version": 1]))
+    }
+
     func testDailyCostsSeries() {
         let cal = Calendar.current
         let now = cal.date(from: DateComponents(year: 2026, month: 9, day: 22, hour: 12))!

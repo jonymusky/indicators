@@ -151,7 +151,7 @@ public final class ProviderService: @unchecked Sendable {
             case .claude: live = try await ClaudeUsageFetcher(client: client).fetch()
             case .openai: live = try await CodexUsageFetcher(client: client).fetch()
             case .gemini: live = try await GeminiQuotaFetcher(client: client).fetch()
-            case .grok: live = nil
+            case .grok: live = GrokBotUsageFetcher.isInstalled() ? try await GrokBotUsageFetcher(client: client).fetch() : nil
             case .cursor: live = try await CursorUsageFetcher(client: client).fetch()
             }
             if let live {
@@ -179,7 +179,7 @@ public final class ProviderService: @unchecked Sendable {
             }
             snap.notes.append(Self.describe(error, provider: provider))
         }
-        if provider == .grok, KeychainStore.get(.xaiManagementKey) == nil {
+        if provider == .grok, snap.windows.isEmpty, KeychainStore.get(.xaiManagementKey) == nil {
             snap.notes.append("Add an xAI management key in Settings to see API spend and balance.")
         }
 

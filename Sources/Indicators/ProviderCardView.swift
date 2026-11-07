@@ -55,7 +55,7 @@ struct ProviderCardView: View {
 
     private var noWindowsText: String {
         switch snapshot.provider {
-        case .grok: return "Grok subscription limits are not exposed by xAI."
+        case .grok: return "No Grok Bot usage yet. Grok subscription limits are not exposed by xAI."
         case .cursor: return "No Cursor quota data yet."
         default: return "No rate-limit data yet."
         }
