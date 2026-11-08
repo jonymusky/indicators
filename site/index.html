@@ -122,6 +122,8 @@
   .demo .bar { display: flex; gap: 7px; padding: 12px 14px; border-bottom: 1px solid var(--line); }
   .demo .bar i { width: 11px; height: 11px; border-radius: 50%; background: #2c3040; display: block; }
   .demo img, .demo video { display: block; width: 100%; height: auto; }
+  .shot { margin: 40px auto 0; max-width: 820px; }
+  .shot img { display: block; width: 100%; height: auto; border-radius: 12px; box-shadow: 0 40px 120px rgba(0,0,0,.6); }
 
   .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; margin-top: 40px; }
   .card { padding: 24px; border: 1px solid var(--line); border-radius: var(--radius); background: linear-gradient(180deg, rgba(255,255,255,.035), rgba(255,255,255,.015)); }
@@ -168,6 +170,7 @@
     <a href="#demo">Demo</a>
     <a href="#features">Features</a>
     <a href="#mcp">MCP</a>
+    <a href="#skills">Skills</a>
     <a href="#providers">Providers</a>
     <a href="#faq">FAQ</a>
     <a href="#install">Install</a>
@@ -269,6 +272,20 @@
         "resets_at": "2026-09-25T12:06:19Z" } ] }</pre></div>
     </div>
     <p class="sub" style="margin-top:22px">Tools: <span class="mono">get_usage</span>, <span class="mono">recommend_model</span>, <span class="mono">set_routing_rule</span>, <span class="mono">list_routing_rules</span>, <span class="mono">delete_routing_rule</span>, <span class="mono">estimate_cost</span>, <span class="mono">list_models</span>. Rules live in <span class="mono">~/.config/indicators/routing.json</span>. The server recommends and explains; it never switches models behind your back.</p>
+  </div>
+</section>
+
+<section id="skills">
+  <div class="wrap">
+    <div class="reveal">
+      <div class="eyebrow">Agent skills</div>
+      <h2>Your global skills, kept current.</h2>
+      <p class="sub">One window lists every skill installed for Claude Code, Codex, Cursor, Gemini CLI, OpenCode and other agents. Indicators checks each <a href="https://skills.sh">skills.sh</a> skill against its GitHub source and flags the ones that changed. Update, remove or reveal them in one click, or search skills.sh and install new ones globally. Your own local skills are listed and left alone.</p>
+    </div>
+    <div class="shot reveal">
+      <img src="media/skills.png" alt="Indicators Skills window listing installed skills.sh skills, with update badges and Update buttons" loading="lazy">
+    </div>
+    <p class="sub" style="margin-top:22px">From the terminal: <span class="mono">indicators-cli skills</span> lists them with update status, and <span class="mono">indicators-cli skills find &lt;query&gt;</span> searches skills.sh. Updates and installs run the official <span class="mono">npx skills</span> CLI.</p>
   </div>
 </section>
 

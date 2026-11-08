@@ -133,7 +133,11 @@ struct SkillsView: View {
         .frame(minWidth: 640, minHeight: 480)
         .task {
             model.onChange = { [weak store] in Task { await store?.refreshSkillUpdateCount() } }
-            // Debug aid for screenshots: INDICATORS_SKILLS_QUERY opens the Discover tab with that search.
+            // Debug aids for screenshots: INDICATORS_SKILLS_FILTER picks a tab ("skills.sh", "Updates"…),
+            // INDICATORS_SKILLS_QUERY opens the Discover tab with that search.
+            if let f = ProcessInfo.processInfo.environment["INDICATORS_SKILLS_FILTER"], let filter = SkillsFilter(rawValue: f) {
+                model.filter = filter
+            }
             if let q = ProcessInfo.processInfo.environment["INDICATORS_SKILLS_QUERY"] {
                 model.filter = .discover
                 model.query = q
@@ -156,33 +160,36 @@ struct SkillsView: View {
     }
 
     private var toolbar: some View {
-        HStack(spacing: 10) {
-            VStack(alignment: .leading, spacing: 2) {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(alignment: .firstTextBaseline, spacing: 10) {
                 Text("Skills").font(.headline)
-                Text(summary).font(.caption).foregroundStyle(.secondary)
-            }
-            Spacer()
-            Picker("", selection: $model.filter) {
-                ForEach(SkillsFilter.allCases, id: \.self) { f in
-                    Text(f == .updates && !model.updatesAvailable.isEmpty ? "Updates (\(model.updatesAvailable.count))" : f.rawValue).tag(f)
+                Text(summary).font(.caption).foregroundStyle(.secondary).lineLimit(1)
+                Spacer()
+                if model.loading {
+                    ProgressView().controlSize(.small).frame(width: 20)
+                } else {
+                    Button { Task { await model.load(force: true) } } label: { Image(systemName: "arrow.clockwise") }
+                        .buttonStyle(.borderless)
+                        .help("Check GitHub for updates")
+                }
+                if !model.updatesAvailable.isEmpty {
+                    Button("Update all") { Task { await model.update([]) } }
+                        .fixedSize()
+                        .disabled(!model.busy.isEmpty)
                 }
             }
-            .pickerStyle(.segmented)
-            .labelsHidden()
-            .frame(width: 380)
-            TextField(model.filter == .discover ? "Search skills.sh" : "Search", text: $model.query)
-                .textFieldStyle(.roundedBorder)
-                .frame(width: 140)
-            if model.loading {
-                ProgressView().controlSize(.small).frame(width: 20)
-            } else {
-                Button { Task { await model.load(force: true) } } label: { Image(systemName: "arrow.clockwise") }
-                    .buttonStyle(.borderless)
-                    .help("Check GitHub for updates")
-            }
-            if !model.updatesAvailable.isEmpty {
-                Button("Update all") { Task { await model.update([]) } }
-                    .disabled(!model.busy.isEmpty)
+            HStack(spacing: 10) {
+                Picker("", selection: $model.filter) {
+                    ForEach(SkillsFilter.allCases, id: \.self) { f in
+                        Text(f == .updates && !model.updatesAvailable.isEmpty ? "Updates (\(model.updatesAvailable.count))" : f.rawValue).tag(f)
+                    }
+                }
+                .pickerStyle(.segmented)
+                .labelsHidden()
+                .fixedSize()
+                TextField(model.filter == .discover ? "Search skills.sh" : "Search", text: $model.query)
+                    .textFieldStyle(.roundedBorder)
+                    .frame(minWidth: 140)
             }
         }
         .padding(.horizontal, 14)
