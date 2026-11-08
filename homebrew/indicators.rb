@@ -1,6 +1,6 @@
 cask "indicators" do
-  version "0.2.2"
-  sha256 "01037454faaddcb2a3c94af2a8cfc7ab73ac3a622d9edadf78e88261ad6f4884"
+  version "0.3.0"
+  sha256 "f8769adaa16c96674e9343cc26815ed2f9275b54e78de3fe47c6e215d6dc4c93"
 
   url "https://github.com/jonymusky/indicators/releases/download/v#{version}/Indicators.zip"
   name "Indicators"
