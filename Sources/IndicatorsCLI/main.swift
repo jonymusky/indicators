@@ -6,6 +6,7 @@ import IndicatorsCore
 //   indicators-cli report [--json]   Local-log cost estimate per provider (like ccusage)
 //   indicators-cli usage             Live rate-limit windows per provider
 //   indicators-cli skills [--json] [--refresh]   Globally installed agent skills and available updates
+//   indicators-cli skills find <query>           Search the skills.sh directory
 
 let args = CommandLine.arguments.dropFirst()
 let command = args.first ?? "report"
@@ -66,6 +67,18 @@ func printUsage() async {
 }
 
 func printSkills() async {
+    if args.dropFirst().first == "find" {
+        let query = args.dropFirst(2).filter { !$0.hasPrefix("--") }.joined(separator: " ")
+        do {
+            let results = try await SkillsDirectory().search(query)
+            let installed = Set(SkillsScanner().scan().map(\.name))
+            for r in results {
+                let mark = installed.contains(r.skillId) ? "✓" : " "
+                print("\(mark) \(r.name.padding(toLength: 32, withPad: " ", startingAt: 0)) \(String(r.installs).padding(toLength: 9, withPad: " ", startingAt: 0)) npx skills add \(r.source) --skill \(r.skillId) -g")
+            }
+        } catch { print("search failed: \(error)") }
+        return
+    }
     let scanned = SkillsScanner().scan()
     let skills = await SkillUpdateChecker().check(scanned, force: args.contains("--refresh"))
     if wantsJSON {
@@ -101,6 +114,6 @@ case "skills":
 case "report":
     printReport()
 default:
-    print("usage: indicators-cli [report [--json] | usage | skills [--json] [--refresh]]")
+    print("usage: indicators-cli [report [--json] | usage | skills [--json] [--refresh] | skills find <query>]")
     exit(2)
 }

@@ -291,6 +291,43 @@ extension JSONEncoder {
     }()
 }
 
+/// A skill listed on skills.sh.
+public struct DirectorySkill: Identifiable, Codable, Sendable, Equatable {
+    public var id: String
+    public var source: String
+    public var skillId: String
+    public var name: String
+    public var installs: Int
+}
+
+/// Search on the skills.sh directory, the same endpoint `npx skills find` uses.
+public struct SkillsDirectory: Sendable {
+    public static let searchURL = URL(string: "https://skills.sh/api/search")!
+    public var client: HTTPClient
+
+    public init(client: HTTPClient = HTTPClient()) { self.client = client }
+
+    public func search(_ query: String, limit: Int = 30) async throws -> [DirectorySkill] {
+        var components = URLComponents(url: Self.searchURL, resolvingAgainstBaseURL: false)!
+        components.queryItems = [.init(name: "q", value: query), .init(name: "limit", value: String(limit))]
+        let json = try await client.json("GET", components.url!)
+        guard let obj = json as? [String: Any] else { throw HTTPError.invalidResponse }
+        return Self.parse(obj)
+    }
+
+    /// `{"skills": [{"id": "owner/repo/skill", "source": "owner/repo", "skillId": "skill", "name": "skill", "installs": 123}]}`
+    public static func parse(_ obj: [String: Any]) -> [DirectorySkill] {
+        var out: [DirectorySkill] = []
+        for case let s as [String: Any] in (obj["skills"] as? [Any]) ?? [] {
+            guard let source = JSON.string(s["source"]), source.contains("/"),
+                  let skillId = JSON.string(s["skillId"]) ?? JSON.string(s["name"]) else { continue }
+            out.append(DirectorySkill(id: JSON.string(s["id"]) ?? "\(source)/\(skillId)", source: source, skillId: skillId,
+                                      name: JSON.string(s["name"]) ?? skillId, installs: JSON.int(s["installs"]) ?? 0))
+        }
+        return out.sorted { $0.installs > $1.installs }
+    }
+}
+
 /// Runs the `skills` CLI (`npx -y skills …`) for update, remove and add. GUI apps do not inherit the shell PATH,
 /// so npx is looked up in nvm, Homebrew and Volta folders, falling back to an interactive login zsh.
 public enum SkillsCLI {
@@ -302,7 +339,9 @@ public enum SkillsCLI {
 
     public static func updateArguments(_ names: [String]) -> [String] { ["update"] + names + ["--global", "--yes"] }
     public static func removeArguments(_ names: [String]) -> [String] { ["remove"] + names + ["--global", "--agent", "*", "--yes"] }
-    public static func addArguments(_ source: String) -> [String] { ["add", source, "--global", "--yes"] }
+    public static func addArguments(_ source: String, skill: String? = nil) -> [String] {
+        ["add", source] + (skill.map { ["--skill", $0] } ?? []) + ["--global", "--yes"]
+    }
 
     /// Highest installed nvm node first, then Homebrew, /usr/local and Volta.
     public static func npxCandidates(home: URL = FileManager.default.homeDirectoryForCurrentUser) -> [URL] {

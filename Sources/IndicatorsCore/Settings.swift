@@ -21,6 +21,7 @@ public struct AppSettings: Sendable, Equatable {
         static let interval = "refreshIntervalMinutes"
         static let enabled = "enabledProviders"
         static let known = "knownProviders"
+        static let autoEnabled = "autoEnabledSources"
         static let showPercent = "showPercentInMenuBar"
         static let showCost = "showCostInMenuBar"
         static let showReset = "showResetInMenuBar"
@@ -40,6 +41,15 @@ public struct AppSettings: Sendable, Equatable {
             // Providers added in a newer version start enabled instead of silently missing.
             let known = Set((defaults.stringArray(forKey: Keys.known) ?? raw).compactMap(Provider.init(rawValue:)))
             for provider in Provider.allCases where !known.contains(provider) { s.enabledProviders.insert(provider) }
+            // Grok used to show nothing without an xAI key, so many turned it off. Once Grok Bot is installed
+            // it has live usage: turn Grok on a single time (turning it off again is respected).
+            var auto = defaults.stringArray(forKey: Keys.autoEnabled) ?? []
+            if !auto.contains("grok-bot"), GrokBotUsageFetcher.isInstalled() {
+                s.enabledProviders.insert(.grok)
+                auto.append("grok-bot")
+                defaults.set(auto, forKey: Keys.autoEnabled)
+                defaults.set(s.enabledProviders.map(\.rawValue).sorted(), forKey: Keys.enabled)
+            }
         }
         if defaults.object(forKey: Keys.showPercent) != nil { s.showPercentInMenuBar = defaults.bool(forKey: Keys.showPercent) }
         if defaults.object(forKey: Keys.showCost) != nil { s.showCostInMenuBar = defaults.bool(forKey: Keys.showCost) }

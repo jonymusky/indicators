@@ -3,7 +3,7 @@ import AppKit
 import IndicatorsCore
 
 enum SkillsFilter: String, CaseIterable, Hashable {
-    case all = "All", updates = "Updates", managed = "skills.sh", local = "Local"
+    case all = "All", updates = "Updates", managed = "skills.sh", local = "Local", discover = "Discover"
 }
 
 @MainActor
@@ -19,6 +19,10 @@ final class SkillsModel: ObservableObject {
     @Published var filter: SkillsFilter = .all
     @Published var addSource = ""
     @Published var pendingRemoval: InstalledSkill?
+    @Published var discover: [DirectorySkill] = []
+    @Published var discoverLoading = false
+    @Published var discoverError: String?
+    private var searchTask: Task<Void, Never>?
 
     var onChange: (() -> Void)?
 
@@ -32,6 +36,7 @@ final class SkillsModel: ObservableObject {
             case .updates: guard skill.update == .available else { return false }
             case .managed: guard skill.kind != .local else { return false }
             case .local: guard skill.kind == .local else { return false }
+            case .discover: return false
             }
             guard !q.isEmpty else { return true }
             return skill.name.lowercased().contains(q) || (skill.source ?? "").lowercased().contains(q)
@@ -47,6 +52,36 @@ final class SkillsModel: ObservableObject {
         checkedAt = Date()
         loading = false
         onChange?()
+    }
+
+    var installedNames: Set<String> { Set(skills.map(\.name)) }
+
+    /// Debounced skills.sh search for the Discover tab.
+    func scheduleSearch() {
+        searchTask?.cancel()
+        let q = query.trimmingCharacters(in: .whitespaces)
+        guard filter == .discover, q.count >= 2 else {
+            if q.isEmpty { discover = []; discoverError = nil }
+            return
+        }
+        searchTask = Task { [weak self] in
+            try? await Task.sleep(for: .milliseconds(350))
+            guard !Task.isCancelled, let self else { return }
+            self.discoverLoading = true
+            do {
+                let results = try await SkillsDirectory().search(q)
+                guard !Task.isCancelled else { return }
+                self.discover = results
+                self.discoverError = nil
+            } catch {
+                if !Task.isCancelled { self.discoverError = "skills.sh search failed: \(error.localizedDescription)" }
+            }
+            self.discoverLoading = false
+        }
+    }
+
+    func install(_ skill: DirectorySkill) async {
+        await run(SkillsCLI.addArguments(skill.source, skill: skill.skillId), busyKeys: [skill.id], title: "Installing \(skill.name)")
     }
 
     func update(_ names: [String]) async {
@@ -98,9 +133,16 @@ struct SkillsView: View {
         .frame(minWidth: 640, minHeight: 480)
         .task {
             model.onChange = { [weak store] in Task { await store?.refreshSkillUpdateCount() } }
+            // Debug aid for screenshots: INDICATORS_SKILLS_QUERY opens the Discover tab with that search.
+            if let q = ProcessInfo.processInfo.environment["INDICATORS_SKILLS_QUERY"] {
+                model.filter = .discover
+                model.query = q
+            }
             await model.load()
         }
         .onAppear { NSApp.activate(ignoringOtherApps: true) }
+        .onChange(of: model.query) { _, _ in model.scheduleSearch() }
+        .onChange(of: model.filter) { _, _ in model.scheduleSearch() }
         .confirmationDialog(
             "Remove \(model.pendingRemoval?.name ?? "")?",
             isPresented: Binding(get: { model.pendingRemoval != nil }, set: { if !$0 { model.pendingRemoval = nil } }),
@@ -127,8 +169,8 @@ struct SkillsView: View {
             }
             .pickerStyle(.segmented)
             .labelsHidden()
-            .frame(width: 300)
-            TextField("Search", text: $model.query)
+            .frame(width: 380)
+            TextField(model.filter == .discover ? "Search skills.sh" : "Search", text: $model.query)
                 .textFieldStyle(.roundedBorder)
                 .frame(width: 140)
             if model.loading {
@@ -157,7 +199,9 @@ struct SkillsView: View {
 
     @ViewBuilder
     private var content: some View {
-        if model.skills.isEmpty && model.loading {
+        if model.filter == .discover {
+            discoverContent
+        } else if model.skills.isEmpty && model.loading {
             VStack { Spacer(); ProgressView(); Spacer() }.frame(maxWidth: .infinity)
         } else if model.visible.isEmpty {
             VStack(spacing: 6) {
@@ -178,6 +222,42 @@ struct SkillsView: View {
             }
             .listStyle(.inset)
         }
+    }
+
+    @ViewBuilder
+    private var discoverContent: some View {
+        let q = model.query.trimmingCharacters(in: .whitespaces)
+        if q.count < 2 {
+            placeholder("magnifyingglass", "Search the skills.sh directory", "Type at least two characters, e.g. “react”, “testing”, “stripe”.")
+        } else if let error = model.discoverError {
+            placeholder("exclamationmark.triangle", "Search failed", error)
+        } else if model.discover.isEmpty {
+            if model.discoverLoading {
+                VStack { Spacer(); ProgressView(); Spacer() }.frame(maxWidth: .infinity)
+            } else {
+                placeholder("puzzlepiece.extension", "No skills found for “\(q)”", "Try another word, or paste owner/repo below.")
+            }
+        } else {
+            List(model.discover) { skill in
+                DirectoryRow(skill: skill, installed: model.installedNames.contains(skill.skillId),
+                             busy: model.busy.contains(skill.id) || model.busy.contains("*")) {
+                    Task { await model.install(skill) }
+                }
+            }
+            .listStyle(.inset)
+        }
+    }
+
+    private func placeholder(_ icon: String, _ title: String, _ detail: String) -> some View {
+        VStack(spacing: 6) {
+            Spacer()
+            Image(systemName: icon).font(.largeTitle).foregroundStyle(.secondary)
+            Text(title).foregroundStyle(.secondary)
+            Text(detail).font(.caption).foregroundStyle(.secondary).multilineTextAlignment(.center)
+            Spacer()
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.horizontal, 24)
     }
 
     private var logPanel: some View {
@@ -299,5 +379,43 @@ struct SkillRow: View {
         if !skill.agents.isEmpty { parts.append(skill.agents.joined(separator: ", ")) }
         if let updated = skill.updatedAt ?? skill.installedAt { parts.append("updated \(Format.relative(updated))") }
         return parts.joined(separator: " · ")
+    }
+}
+
+struct DirectoryRow: View {
+    let skill: DirectorySkill
+    let installed: Bool
+    let busy: Bool
+    let onInstall: () -> Void
+
+    var body: some View {
+        HStack(spacing: 10) {
+            VStack(alignment: .leading, spacing: 3) {
+                Text(skill.name).font(.system(.body, weight: .semibold))
+                Text("\(skill.source) · \(Self.installs(skill.installs)) installs").font(.caption).foregroundStyle(.secondary)
+            }
+            Spacer()
+            if busy {
+                ProgressView().controlSize(.small)
+            } else if installed {
+                Text("Installed").font(.caption).foregroundStyle(.secondary)
+            } else {
+                Button("Install", action: onInstall).controlSize(.small)
+            }
+            Button {
+                NSWorkspace.shared.open(URL(string: "https://skills.sh/\(skill.id)")!)
+            } label: { Image(systemName: "arrow.up.right.square") }
+                .buttonStyle(.borderless)
+                .help("Open on skills.sh")
+        }
+        .padding(.vertical, 4)
+    }
+
+    static func installs(_ n: Int) -> String {
+        switch n {
+        case 1_000_000...: return String(format: "%.1fM", Double(n) / 1_000_000)
+        case 1_000...: return String(format: "%.1fK", Double(n) / 1_000)
+        default: return "\(n)"
+        }
     }
 }

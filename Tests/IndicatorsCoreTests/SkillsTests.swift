@@ -68,7 +68,22 @@ final class SkillsTests: XCTestCase {
         XCTAssertEqual(SkillUpdateChecker.status(for: skill, folders: nil), .unknown)
     }
 
+    func testDirectorySearchParsing() throws {
+        let json = """
+        {"query":"react","skills":[
+          {"id":"a/b/small","source":"a/b","skillId":"small","name":"small","installs":10},
+          {"id":"vercel-labs/agent-skills/vercel-react-best-practices","source":"vercel-labs/agent-skills","skillId":"vercel-react-best-practices","name":"vercel-react-best-practices","installs":880329},
+          {"id":"broken","source":"nosplash","skillId":"x","name":"x","installs":1}]}
+        """
+        let obj = try JSONSerialization.jsonObject(with: Data(json.utf8)) as! [String: Any]
+        let results = SkillsDirectory.parse(obj)
+        XCTAssertEqual(results.map(\.skillId), ["vercel-react-best-practices", "small"])
+        XCTAssertEqual(results.first?.installs, 880329)
+    }
+
     func testCLIArguments() {
+        XCTAssertEqual(SkillsCLI.addArguments("a/b", skill: "c"), ["add", "a/b", "--skill", "c", "--global", "--yes"])
+        XCTAssertEqual(SkillsCLI.addArguments("a/b"), ["add", "a/b", "--global", "--yes"])
         XCTAssertEqual(SkillsCLI.updateArguments(["a"]), ["update", "a", "--global", "--yes"])
         XCTAssertEqual(SkillsCLI.removeArguments(["a"]), ["remove", "a", "--global", "--agent", "*", "--yes"])
         XCTAssertEqual(SkillsCLI.shellQuote("it's"), "'it'\\''s'")
