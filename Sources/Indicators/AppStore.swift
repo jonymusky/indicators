@@ -66,6 +66,9 @@ final class AppStore: ObservableObject {
             }
         }
         if env["INDICATORS_DEMO"] == "1" { runDemoScript() }
+        if env["INDICATORS_PREVIEW"] == "skills" {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1) { [weak self] in self?.openSkillsPreviewWindow() }
+        }
     }
 
     /// Debug aid: `INDICATORS_PREVIEW=1 build/Indicators.app/Contents/MacOS/Indicators` shows the popover
@@ -104,6 +107,22 @@ final class AppStore: ObservableObject {
     }
 
     private var previewWindow: NSWindow?
+
+    /// `INDICATORS_PREVIEW=skills`: the Skills window as a plain NSWindow, printing its id for screencapture.
+    private func openSkillsPreviewWindow() {
+        let hosting = NSHostingController(rootView: SkillsView().environmentObject(self))
+        let window = NSWindow(contentViewController: hosting)
+        window.title = "Skills"
+        window.setContentSize(NSSize(width: 760, height: 600))
+        window.center()
+        window.makeKeyAndOrderFront(nil)
+        previewWindow = window
+        NSApp.activate(ignoringOtherApps: true)
+        DispatchQueue.main.asyncAfter(deadline: .now() + 4) {
+            print("SKILLS_WINDOW \(window.windowNumber)")
+            fflush(stdout)
+        }
+    }
 
     /// `INDICATORS_DEMO=1`: scripted walkthrough used to record the README GIF.
     private func runDemoScript() {
@@ -193,6 +212,18 @@ final class AppStore: ObservableObject {
         for provider in Provider.allCases where !enabled.contains(provider) { snapshots[provider] = nil }
         lastRefresh = Date()
         isRefreshing = false
+        await refreshSkillUpdateCount()
+    }
+
+    // MARK: Skills
+
+    /// Managed skills whose source moved on. The checker caches GitHub answers for hours, so this is cheap.
+    @Published var skillUpdateCount = 0
+
+    func refreshSkillUpdateCount() async {
+        let skills = await Task.detached(priority: .utility) { SkillsScanner().scan() }.value
+        let checked = await SkillUpdateChecker().check(skills)
+        skillUpdateCount = checked.filter { $0.update == .available }.count
     }
 
     // MARK: - Updates

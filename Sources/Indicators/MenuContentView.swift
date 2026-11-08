@@ -21,6 +21,7 @@ struct LoadingCardView: View {
 struct MenuContentView: View {
     @EnvironmentObject private var store: AppStore
     @Environment(\.openSettings) private var openSettings
+    @Environment(\.openWindow) private var openWindow
 
     var body: some View {
         VStack(spacing: 0) {
@@ -64,6 +65,19 @@ struct MenuContentView: View {
                     .buttonStyle(.borderless)
                     .help("Refresh now")
             }
+            Button {
+                openWindow(id: "skills")
+                NSApp.activate(ignoringOtherApps: true)
+            } label: {
+                Image(systemName: "puzzlepiece.extension")
+                    .overlay(alignment: .topTrailing) {
+                        if store.skillUpdateCount > 0 {
+                            Circle().fill(.orange).frame(width: 6, height: 6).offset(x: 3, y: -2)
+                        }
+                    }
+            }
+                .buttonStyle(.borderless)
+                .help(store.skillUpdateCount > 0 ? "Skills (\(store.skillUpdateCount) updates)" : "Skills")
             Button {
                 openSettings()
                 NSApp.activate(ignoringOtherApps: true)

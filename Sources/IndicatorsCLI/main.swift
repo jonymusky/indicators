@@ -5,6 +5,7 @@ import IndicatorsCore
 // Usage:
 //   indicators-cli report [--json]   Local-log cost estimate per provider (like ccusage)
 //   indicators-cli usage             Live rate-limit windows per provider
+//   indicators-cli skills [--json] [--refresh]   Globally installed agent skills and available updates
 
 let args = CommandLine.arguments.dropFirst()
 let command = args.first ?? "report"
@@ -64,14 +65,42 @@ func printUsage() async {
     }
 }
 
+func printSkills() async {
+    let scanned = SkillsScanner().scan()
+    let skills = await SkillUpdateChecker().check(scanned, force: args.contains("--refresh"))
+    if wantsJSON {
+        let encoder = JSONEncoder.isoPretty
+        if let data = try? encoder.encode(skills) { print(String(decoding: data, as: UTF8.self)) }
+        return
+    }
+    let updates = skills.filter { $0.update == .available }.count
+    print("\(skills.count) skills · \(updates) update\(updates == 1 ? "" : "s") available")
+    for s in skills {
+        let status: String
+        switch (s.kind, s.update) {
+        case (.managed, .available): status = "update available"
+        case (.managed, .upToDate): status = "up to date"
+        case (.managed, .unknown): status = "managed"
+        case (.untracked, _): status = "not in lock file"
+        case (.local, _): status = "local"
+        }
+        let origin = s.source ?? (s.path as NSString).abbreviatingWithTildeInPath
+        print("  \(s.name.padding(toLength: 28, withPad: " ", startingAt: 0)) \(status.padding(toLength: 17, withPad: " ", startingAt: 0)) \(origin)  [\(s.agents.joined(separator: ", "))]")
+    }
+}
+
 switch command {
 case "usage":
     let semaphore = DispatchSemaphore(value: 0)
     Task { await printUsage(); semaphore.signal() }
     semaphore.wait()
+case "skills":
+    let semaphore = DispatchSemaphore(value: 0)
+    Task { await printSkills(); semaphore.signal() }
+    semaphore.wait()
 case "report":
     printReport()
 default:
-    print("usage: indicators-cli [report [--json] | usage]")
+    print("usage: indicators-cli [report [--json] | usage | skills [--json] [--refresh]]")
     exit(2)
 }

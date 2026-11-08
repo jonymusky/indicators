@@ -19,6 +19,12 @@ struct IndicatorsApp: App {
                 .environmentObject(store)
         }
 
+        Window("Skills", id: "skills") {
+            SkillsView()
+                .environmentObject(store)
+        }
+        .defaultSize(width: 760, height: 600)
+
     }
 }
 

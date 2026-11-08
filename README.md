@@ -108,6 +108,10 @@ Nothing to configure for the basics: if you use Claude Code, Codex CLI or Gemini
 - **Gemini**: sign in to Gemini CLI with Google (`gemini` → *Login with Google*). API-key logins show costs but no quota buckets.
 - **Cursor**: just be signed in to the Cursor app. Indicators reads its local session and asks cursor.com for the billing cycle usage. Cursor 3.x encrypts the session, so macOS asks once to let `security` read "Cursor Safe Storage": choose Always Allow.
 - **Grok Bot**: just be signed in to the Grok Bot app. Indicators reads its local session (macOS asks once for "Grok Bot Safe Storage") and shows the usage pool on the Grok card.
+
+### Skills
+
+The puzzle icon in the popover opens the **Skills** window: every skill in your agents' global folders (`~/.agents/skills`, `~/.claude/skills`, `~/.cursor/skills`, `~/.codex/skills`…), where it came from, and whether its GitHub source has changed since you installed it (the same folder-hash check `npx skills update` runs, cached for six hours; set `GITHUB_TOKEN` to raise the API limit). Update, remove and add go through the [skills](https://skills.sh) CLI (`npx skills … --global`), so Node.js must be installed. Your own skills (plain folders or symlinks into your repos) are listed as **Local** and are never touched. From the terminal: `indicators-cli skills`.
 - **Billing APIs** (optional, Settings → Billing APIs): Anthropic admin key (`sk-ant-admin…`), OpenAI admin key, xAI management key + team id. Keys are stored in your Keychain and only ever sent to the vendor that issued them.
 
 ## MCP server: let your agent route between providers

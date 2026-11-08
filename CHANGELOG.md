@@ -6,6 +6,10 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+### Added
+- Skills window (puzzle icon in the popover header): lists globally installed agent skills from skills.sh and your own local ones, shows which agents expose each one, checks GitHub for updates the same way `npx skills update` does, and updates, removes or adds skills through the `skills` CLI. The icon gets a dot when updates are available.
+- `indicators-cli skills [--json] [--refresh]` prints the same list from the terminal.
+
 ## [0.2.2] - 2026-11-07
 
 ### Added
